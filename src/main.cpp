@@ -1,34 +1,22 @@
 #define _USE_MATH_DEFINES
 #include <GL/glew.h>
 #include <GL/glut.h>
-#include <cmath>
 #include <iostream>
 
+#include "Camera.h"
+#include "Scene.h"
+#include "InputHandler.h"
+
 // Window dimensions
-int windowWidth = 1280;
-int windowHeight = 720;
+const int WINDOW_WIDTH = 1280;
+const int WINDOW_HEIGHT = 720;
 
-// Camera properties
-float cameraX = 0.0f, cameraY = 2.0f, cameraZ = 10.0f;
-float cameraYaw = 0.0f;   // Horizontal rotation
-float cameraPitch = 0.0f; // Vertical rotation
+// Global objects
+Camera* camera = nullptr;
+Scene* scene = nullptr;
+InputHandler* inputHandler = nullptr;
 
-// Movement
-float moveSpeed = 0.2f;
-bool keys[256] = {false};
-
-// Mouse control
-int lastMouseX = windowWidth / 2;
-int lastMouseY = windowHeight / 2;
-bool firstMouse = true;
-float mouseSensitivity = 0.1f;
-
-// Forward declaration
-void drawBox(float x, float y, float z, float width, float height, float depth,
-             float r, float g, float b);
-void drawGround();
-
-void init() {
+void initOpenGL() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
@@ -46,37 +34,6 @@ void init() {
 
     // Background color (sky blue)
     glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
-
-    // Hide cursor and center it
-    glutSetCursor(GLUT_CURSOR_NONE);
-    glutWarpPointer(windowWidth / 2, windowHeight / 2);
-}
-
-void drawBox(float x, float y, float z, float width, float height, float depth,
-             float r, float g, float b) {
-    glPushMatrix();
-    glTranslatef(x, y, z);
-    glColor3f(r, g, b);
-    glScalef(width, height, depth);
-    glutSolidCube(1.0f);
-    glPopMatrix();
-}
-
-void drawGround() {
-    glPushMatrix();
-    glColor3f(0.2f, 0.6f, 0.2f); // Green grass color
-
-    glBegin(GL_QUADS);
-    glNormal3f(0.0f, 1.0f, 0.0f); // Normal pointing up
-
-    float groundSize = 50.0f;
-    glVertex3f(-groundSize, 0.0f, -groundSize);
-    glVertex3f(groundSize, 0.0f, -groundSize);
-    glVertex3f(groundSize, 0.0f, groundSize);
-    glVertex3f(-groundSize, 0.0f, groundSize);
-
-    glEnd();
-    glPopMatrix();
 }
 
 void display() {
@@ -85,113 +42,54 @@ void display() {
     // Set up projection matrix
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(60.0, (double)windowWidth / windowHeight, 0.1, 100.0);
+    gluPerspective(60.0, (double)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1, 100.0);
 
-    // Set up modelview matrix (camera)
+    // Set up modelview matrix
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 
-    // Calculate camera direction
-    float lookX = cameraX + cos(cameraPitch * M_PI / 180.0f) * sin(cameraYaw * M_PI / 180.0f);
-    float lookY = cameraY + sin(cameraPitch * M_PI / 180.0f);
-    float lookZ = cameraZ - cos(cameraPitch * M_PI / 180.0f) * cos(cameraYaw * M_PI / 180.0f);
+    // Apply camera view
+    camera->applyView();
 
-    gluLookAt(cameraX, cameraY, cameraZ,  // Camera position
-              lookX, lookY, lookZ,          // Look at point
-              0.0f, 1.0f, 0.0f);           // Up vector
-
-    // Draw the ground
-    drawGround();
-
-    // Draw some boxes in the scene
-    drawBox(0.0f, 1.0f, 0.0f, 2.0f, 2.0f, 2.0f, 0.8f, 0.3f, 0.3f);   // Red box at center
-    drawBox(5.0f, 0.5f, -3.0f, 1.0f, 1.0f, 1.0f, 0.3f, 0.3f, 0.8f);  // Blue box
-    drawBox(-4.0f, 1.5f, 2.0f, 3.0f, 3.0f, 3.0f, 0.8f, 0.8f, 0.3f);  // Yellow box
-    drawBox(8.0f, 1.0f, 5.0f, 2.0f, 2.0f, 2.0f, 0.5f, 0.2f, 0.6f);   // Purple box
-    drawBox(-7.0f, 0.75f, -6.0f, 1.5f, 1.5f, 1.5f, 0.3f, 0.7f, 0.5f); // Teal box
-    drawBox(3.0f, 2.0f, 8.0f, 4.0f, 4.0f, 4.0f, 0.9f, 0.5f, 0.2f);   // Orange box
+    // Draw the scene
+    scene->draw();
 
     glutSwapBuffers();
 }
 
 void update(int value) {
-    // Handle WASD movement
-    float moveX = 0.0f, moveZ = 0.0f;
-
-    if (keys['w'] || keys['W']) {
-        moveX += sin(cameraYaw * M_PI / 180.0f);
-        moveZ -= cos(cameraYaw * M_PI / 180.0f);
-    }
-    if (keys['s'] || keys['S']) {
-        moveX -= sin(cameraYaw * M_PI / 180.0f);
-        moveZ += cos(cameraYaw * M_PI / 180.0f);
-    }
-    if (keys['a'] || keys['A']) {
-        moveX -= cos(cameraYaw * M_PI / 180.0f);
-        moveZ -= sin(cameraYaw * M_PI / 180.0f);
-    }
-    if (keys['d'] || keys['D']) {
-        moveX += cos(cameraYaw * M_PI / 180.0f);
-        moveZ += sin(cameraYaw * M_PI / 180.0f);
-    }
-
-    cameraX += moveX * moveSpeed;
-    cameraZ += moveZ * moveSpeed;
-
+    inputHandler->update();
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // ~60 FPS
 }
 
 void keyboard(unsigned char key, int x, int y) {
-    keys[key] = true;
-
-    if (key == 27) { // ESC key
-        exit(0);
-    }
+    inputHandler->handleKeyPress(key);
 }
 
 void keyboardUp(unsigned char key, int x, int y) {
-    keys[key] = false;
+    inputHandler->handleKeyRelease(key);
 }
 
 void mouseMotion(int x, int y) {
-    if (firstMouse) {
-        lastMouseX = x;
-        lastMouseY = y;
-        firstMouse = false;
-    }
-
-    float deltaX = x - lastMouseX;
-    float deltaY = y - lastMouseY;
-
-    lastMouseX = x;
-    lastMouseY = y;
-
-    cameraYaw += deltaX * mouseSensitivity;
-    cameraPitch -= deltaY * mouseSensitivity;
-
-    // Clamp pitch to prevent flipping
-    if (cameraPitch > 89.0f) cameraPitch = 89.0f;
-    if (cameraPitch < -89.0f) cameraPitch = -89.0f;
-
-    // Re-center mouse cursor
-    if (abs(x - windowWidth / 2) > 100 || abs(y - windowHeight / 2) > 100) {
-        glutWarpPointer(windowWidth / 2, windowHeight / 2);
-        lastMouseX = windowWidth / 2;
-        lastMouseY = windowHeight / 2;
-    }
+    inputHandler->handleMouseMotion(x, y);
 }
 
 void reshape(int width, int height) {
-    windowWidth = width;
-    windowHeight = height;
     glViewport(0, 0, width, height);
+    inputHandler->setWindowSize(width, height);
+}
+
+void cleanup() {
+    delete camera;
+    delete scene;
+    delete inputHandler;
 }
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(windowWidth, windowHeight);
+    glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     glutCreateWindow("FPS Game");
 
     // Initialize GLEW
@@ -201,8 +99,20 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    init();
+    // Initialize OpenGL settings
+    initOpenGL();
 
+    // Create game objects
+    camera = new Camera(0.0f, 2.0f, 10.0f);
+    scene = new Scene();
+    scene->initialize();
+    inputHandler = new InputHandler(camera, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+    // Hide and center cursor
+    glutSetCursor(GLUT_CURSOR_NONE);
+    glutWarpPointer(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
+
+    // Register callbacks
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutKeyboardFunc(keyboard);
@@ -210,10 +120,15 @@ int main(int argc, char** argv) {
     glutPassiveMotionFunc(mouseMotion);
     glutTimerFunc(0, update, 0);
 
+    // Print controls
     std::cout << "Controls:" << std::endl;
     std::cout << "  WASD - Move around" << std::endl;
     std::cout << "  Mouse - Look around" << std::endl;
+    std::cout << "  Tab - Toggle mouse capture (free cursor for other windows)" << std::endl;
     std::cout << "  ESC - Exit" << std::endl;
+
+    // Cleanup on exit
+    atexit(cleanup);
 
     glutMainLoop();
     return 0;

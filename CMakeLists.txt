@@ -15,7 +15,13 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 link_directories(${CMAKE_SOURCE_DIR}/lib)
 
 # 源代码
-add_executable(FirstOGL src/main.cpp)
+add_executable(FirstOGL
+    src/main.cpp
+    src/Camera.cpp
+    src/GameObject.cpp
+    src/Scene.cpp
+    src/InputHandler.cpp
+)
 
 # 链接库
 target_link_libraries(FirstOGL
