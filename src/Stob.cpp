@@ -2,8 +2,6 @@
 #include "Stob.h"
 #include <cmath>
 #include <gl/glut.h>
-#include <iostream>
-#define disp(x) std::cout << x << std::endl;
 
 bool Stob::testCollision(Vector3 posBullet, float rBullet) {
     float dx = posBullet.x - x;
@@ -101,3 +99,4 @@ void Stob::draw() {
     }
     glPopMatrix();
 }
+
