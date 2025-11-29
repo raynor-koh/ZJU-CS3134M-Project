@@ -2,26 +2,36 @@
 #include "Stob.h"
 #include <cmath>
 #include <gl/glut.h>
+#include <iostream>
+#define disp(x) std::cout << x << std::endl;
+
+Stob::Stob(Vector3 pos, float ih, float idiameter, Color col)
+    : GameObject(pos, Vector3(idiameter, ih, idiameter), col), position(pos), size(Vector3(idiameter, ih, idiameter)),
+      diameter(idiameter) {
+    init();
+}
 
 bool Stob::testCollision(Vector3 posBullet, float rBullet) {
-    float dx = posBullet.x - x;
-    float dz = posBullet.z - z;
+    float dx = posBullet.x - position.x;
+    float dz = posBullet.z - position.z;
     float distXZ = sqrtf(dx * dx + dz * dz);
-    if(distXZ <= (radius + rBullet) && posBullet.y >= y && posBullet.y <= (y + h)) {
+    if(distXZ <= (diameter/2.0f + rBullet) && posBullet.y >= position.y && posBullet.y <= (position.y + size.y)) {
         return true;
     }
     return false;
 }
 
 void Stob::rebindTexture(enum PartType type, char* bmpFile) {
-    textures[type].rebind(bmpFile);
+    if(type < 2) textures[type].rebind(bmpFile);
 }
 
-void Stob::setColor(enum PartType type, Color color) {
+void Stob::setColor(enum PartType type, Color icolor) {
     if(type == CAP) {
-        colorCap = color;
+        colorCap = icolor;
     } else if(type == SIDE) {
-        colorSide = color;
+        colorSide = icolor;
+    } else if(type == TEXTURE) {
+        color = icolor;
     }
 }
 
@@ -46,8 +56,8 @@ void Stob::init() {
 
 void Stob::draw() {
     glPushMatrix();
-    glTranslatef(x, y, z);
-    glScalef(radius, h, radius);
+    glTranslatef(position.x, position.y, position.z);
+    glScalef(size.x, size.y, size.z);
     for(int i=0; i<slices; i++) {
         float theta1 = (2.0f * M_PI * i) / slices;
         float theta2 = (2.0f * M_PI * (i + 1)) / slices;
@@ -55,7 +65,7 @@ void Stob::draw() {
         if(textureEnabled) glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textures[1].ID);
         glBegin(GL_TRIANGLES);
-        if(textureEnabled) glColor3f(1.0f, 1.0f, 1.0f);
+        if(textureEnabled) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorCap.r, colorCap.g, colorCap.b);
         glNormal3f(0.0f, -1.0f, 0.0f);
         glTexCoord2f(0.5f, 0.5f);
@@ -80,7 +90,7 @@ void Stob::draw() {
 
         glBindTexture(GL_TEXTURE_2D, textures[0].ID);
         glBegin(GL_QUADS);
-        if(textureEnabled) glColor3f(1.0f, 1.0f, 1.0f);
+        if(textureEnabled) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorSide.r, colorSide.g, colorSide.b);
         glNormal3f(cosf(theta1), 0.0f, sinf(theta1));
         glTexCoord2f((float)i / slices, 0.0f);
@@ -99,4 +109,3 @@ void Stob::draw() {
     }
     glPopMatrix();
 }
-
