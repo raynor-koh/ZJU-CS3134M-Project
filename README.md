@@ -37,23 +37,27 @@ ZJU-CS3134M-Project/
 ├── include/              # 头文件目录
 │   ├── Camera.h         # 相机类
 │   ├── GameObject.h     # 游戏对象类
-│   ├── Scene.h         # 场景管理类
-│   └── InputHandler.h  # 输入处理类
-├── src/                 # 源代码目录
-│   ├── main.cpp        # 主程序入口
-│   ├── Camera.cpp      # 相机实现
-│   ├── GameObject.cpp  # 游戏对象实现
-│   ├── Scene.cpp       # 场景管理实现
+│   ├── Scene.h          # 场景管理类
+│   └── InputHandler.h   # 输入处理类
+│   └── Texture.h        # 纹理类
+│   └── Stob.h           # 碰撞物体类
+├── src/                  # 源代码目录
+│   ├── main.cpp         # 主程序入口
+│   ├── Camera.cpp       # 相机实现
+│   ├── GameObject.cpp   # 游戏对象实现
+│   ├── Scene.cpp        # 场景管理实现
 │   └── InputHandler.cpp # 输入处理实现
-├── lib/                 # 库文件
+│   └── Texture.cpp      # 纹理实现
+│   └── Stob.cpp         # 碰撞物体实现
+├── lib/                  # 库文件
 │   ├── glut32.lib
 │   ├── glut32.dll
 │   ├── glew32.lib
 │   └── glew32.dll
-├── build/              # 构建目录（自动生成）
-├── CMakeLists.txt      # CMake 配置文件
-├── buildAndLaunch.ps1  # 构建和运行脚本
-└── README.md           # 项目说明文档
+├── build/                # 构建目录（自动生成）
+├── CMakeLists.txt        # CMake 配置文件
+├── buildAndLaunch.ps1    # 构建和运行脚本
+└── README.md             # 项目说明文档
 ```
 
 ## 类设计说明
@@ -86,6 +90,21 @@ ZJU-CS3134M-Project/
   - `handleMouseMotion()` - 鼠标移动事件
   - `toggleMouseCapture()` - 切换鼠标捕获模式
   - `update()` - 更新相机移动
+
+### Texture（纹理类）
+- **职责**：管理纹理对象
+- **属性**：ID（unsigned int）
+- **主要方法**：
+  - `rebind(filename)` - 更改纹理文件
+  - 需输入.bmp格式图片
+
+### Stob（碰撞物体类）
+- **职责**：作为GameObject的子类，表示测试子弹的木桩
+- **属性**：直径（float）、颜色（Color）、纹理（vector<Texture>）、圆柱切片数（int）
+- **主要方法**：
+  - `draw()` - 渲染木桩
+  - `testCollision(posBullet, rBullet)` - 测试子弹碰撞
+  - 支持设置颜色、切片数、是否加载纹理以及更改纹理图片
 
 ## 编译和运行
 
