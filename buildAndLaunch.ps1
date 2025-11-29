@@ -16,6 +16,9 @@ cmake --build . --config Release
 # Copy DLLs to Release folder
 Copy-Item ..\lib\glut32.dll Release\
 Copy-Item ..\lib\glew32.dll Release\
+if (-Not (Test-Path -Path "Release\resources")) {
+    Copy-Item ..\resources Release\ -Recurse
+}
 
 # Change to Release directory and run the executable
 Set-Location Release
