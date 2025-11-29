@@ -21,6 +21,8 @@ add_executable(FirstOGL
     src/GameObject.cpp
     src/Scene.cpp
     src/InputHandler.cpp
+    src/Stob.cpp
+    src/Texture.cpp
 )
 
 # 链接库
