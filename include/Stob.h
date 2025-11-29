@@ -4,25 +4,25 @@
 #include "Texture.h"
 #include "GameObject.h"
 
-class Stob {
+class Stob : GameObject {
 public:
-    float x, y, z, h, radius;
-    enum PartType {SIDE=0, CAP=1};
-    // Input: postion(centerX,bottomY,centerZ), height, radius
-    Stob(Vector3 pos, float ih, float iradius)
-        : x(pos.x), y(pos.y), z(pos.z), h(ih), radius(iradius) {init();}
+    enum PartType {SIDE=0, CAP=1, TEXTURE=2};
+    Stob(Vector3 pos, float ih, float idiameter, Color col = Color(1.0f, 1.0f, 1.0f));
     void draw();
-    // Input: position and radius of bullet
     bool testCollision(Vector3 posBullet, float rBullet);
     void setSlices(int s) { slices = s;}
     void rebindTexture(enum PartType type, char* bmpFile);
     void setTextureMode(bool enabled) { textureEnabled = enabled; }
-    void setColor(enum PartType type, Color color);
+    void setColor(enum PartType type, Color icolor);
 private:
+    Vector3 position;
+    Vector3 size;
+    float diameter;
     int slices;
-    Color colorSide, colorCap;
+    Color colorSide, colorCap, color;
     std::vector<Texture> textures;
     GLubyte image[imageheight][imageweight][1];
     bool textureEnabled;
     void init();
 };
+
