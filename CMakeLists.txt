@@ -23,6 +23,7 @@ add_executable(FirstOGL
     src/InputHandler.cpp
     src/Stob.cpp
     src/Texture.cpp
+    src/camera_controller.cpp
 )
 
 # 链接库
@@ -31,3 +32,6 @@ target_link_libraries(FirstOGL
     glut32.lib     # 老师提供的 glut 库
     glew32.lib
 )
+
+# 禁用 SAFESEH
+set_target_properties(FirstOGL PROPERTIES LINK_FLAGS "/SAFESEH:NO")

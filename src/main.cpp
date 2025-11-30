@@ -6,13 +6,17 @@
 #include "Camera.h"
 #include "Scene.h"
 #include "InputHandler.h"
-
+#include "camera_controller.h"
 // Window dimensions
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
 
+//全局变量控制当前摄像机
+bool Active_Third_Camera = false;            // 当前活跃的摄像机false:第一人称,true:第三人称
+
 // Global objects
 Camera* camera = nullptr;
+CameraController* camera_controller = nullptr;
 Scene* scene = nullptr;
 InputHandler* inputHandler = nullptr;
 
@@ -49,8 +53,12 @@ void display() {
     glLoadIdentity();
 
     // Apply camera view
-    camera->applyView();
-
+    if(Active_Third_Camera == false) {
+        camera->applyView();
+    }
+    else {
+        camera_controller->applyView();
+    }
     // Draw the scene
     scene->draw();
 
@@ -81,6 +89,7 @@ void reshape(int width, int height) {
 }
 
 void cleanup() {
+    delete camera_controller;
     delete camera;
     delete scene;
     delete inputHandler;
@@ -104,9 +113,10 @@ int main(int argc, char** argv) {
 
     // Create game objects
     camera = new Camera(0.0f, 2.0f, 10.0f);
+    camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     scene = new Scene();
     scene->initialize();
-    inputHandler = new InputHandler(camera, WINDOW_WIDTH, WINDOW_HEIGHT);
+    inputHandler = new InputHandler(camera, camera_controller, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // Hide and center cursor
     glutSetCursor(GLUT_CURSOR_NONE);

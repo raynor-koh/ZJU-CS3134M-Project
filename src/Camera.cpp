@@ -2,7 +2,7 @@
 #include "Camera.h"
 #include <GL/glut.h>
 #include <cmath>
-
+//第一人称摄像头
 Camera::Camera(float x, float y, float z)
     : x(x), y(y), z(z), yaw(0.0f), pitch(0.0f), moveSpeed(0.2f) {
     updateVectors();

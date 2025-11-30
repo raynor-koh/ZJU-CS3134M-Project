@@ -145,6 +145,8 @@ cmake --build . --config Release
 copy ..\lib\glut32.dll Release\
 copy ..\lib\glew32.dll Release\
 
+或者手动复制need文件夹下所有文件到 Release 目录
+
 # 运行程序
 cd Release
 .\FirstOGL.exe
