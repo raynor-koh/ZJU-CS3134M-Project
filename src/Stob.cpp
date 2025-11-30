@@ -53,6 +53,61 @@ void Stob::init() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
+void Stob::move_absolute(float dx, float dy, float dz) {
+    position.x += dx;
+    position.y += dy;
+    position.z += dz;
+}
+
+void Stob::drawDirection() {//绘制主角头顶的方向箭头，指向鼠标位置
+    glPushMatrix();
+
+    // 平移到 Stob 的位置
+    glTranslatef(position.x, position.y + size.y , position.z); // 箭头位于 Stob 的顶部中心
+
+    // 根据朝向旋转
+    float angle = atan2(visionDirection.z, visionDirection.x) * 180.0f / M_PI; // 计算朝向角度
+    glRotatef(-angle - 90.0f, 0.0f, 1.0f, 0.0f); // 绕 Y 轴旋转
+
+    // 设置箭头颜色
+    glColor3f(1.0f, 1.0f, 0.0f);
+
+    // 绘制箭头
+    glBegin(GL_TRIANGLES);
+        glVertex3f(0.0f, 0.1f, 0.4f);   // 箭头前端
+        glVertex3f(-0.2f, 0.1f, 0.0f);  // 箭头左后
+        glVertex3f(0.2f, 0.1f, 0.0f);   // 箭头右后
+    glEnd();
+    
+    glPopMatrix();
+}
+
+void Stob::drawCoordinateAxes(float x, float y, float z) {
+    glDisable(GL_LIGHTING);  // 临时禁用光照
+    
+    glLineWidth(3.0f);
+    glBegin(GL_LINES);
+    
+    // X轴 - 红色 (x方向)
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(x, y, z);
+    glVertex3f(x + 2.0f, y, z);
+    
+    // Y轴 - 绿色 (y方向)  
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(x, y, z);
+    glVertex3f(x, y + 2.0f, z);
+    
+    // Z轴 - 蓝色 
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(x, y, z);
+    glVertex3f(x, y, z + 2.0f);
+    
+    glEnd();
+    
+    
+    glEnable(GL_LIGHTING);
+}
 
 void Stob::draw() {
     glPushMatrix();
@@ -106,6 +161,17 @@ void Stob::draw() {
         glVertex3f(cosf(theta1), 1.0f, sinf(theta1));
         glEnd();
         glDisable(GL_TEXTURE_2D);
+    }
+    if(testdraw) {
+        // 注意：需要先恢复坐标系
+        glPopMatrix(); // 结束圆柱的变换
+        
+        // 然后绘制箭头和坐标轴
+        drawDirection();
+        drawCoordinateAxes(position.x, position.y, position.z);
+        
+        // 重新推入矩阵，以便后续绘制（如果有）
+        glPushMatrix();
     }
     glPopMatrix();
 }

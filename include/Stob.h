@@ -14,8 +14,15 @@ public:
     void rebindTexture(enum PartType type, char* bmpFile);
     void setTextureMode(bool enabled) { textureEnabled = enabled; }
     void setColor(enum PartType type, Color icolor);
+    void move_absolute(float dx, float dy, float dz);
+    void updateVisionDirection(Vector3 dir) { visionDirection = dir; }
+    void drawDirection();
+    void setTestDraw(bool val) { testdraw = val; }
+    void drawCoordinateAxes(float x, float y, float z);
 private:
-    Vector3 position;
+    bool testdraw = false;
+    Vector3 position;//空间位置
+    Vector3 visionDirection;//朝向
     Vector3 size;
     float diameter;
     int slices;

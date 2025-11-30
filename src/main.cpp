@@ -2,7 +2,8 @@
 #include <GL/glew.h>
 #include <GL/glut.h>
 #include <iostream>
-
+#include "UI.h"
+#include "Stob.h"
 #include "Camera.h"
 #include "Scene.h"
 #include "InputHandler.h"
@@ -15,9 +16,11 @@ const int WINDOW_HEIGHT = 720;
 bool Active_Third_Camera = false;            // 当前活跃的摄像机false:第一人称,true:第三人称
 
 // Global objects
+UI* gameUI = nullptr;
 Camera* camera = nullptr;
 CameraController* camera_controller = nullptr;
 Scene* scene = nullptr;
+Stob* stob_0 = nullptr;
 InputHandler* inputHandler = nullptr;
 
 void initOpenGL() {
@@ -61,7 +64,9 @@ void display() {
     }
     // Draw the scene
     scene->draw();
-
+    //Draw the controlled Stob
+    stob_0->draw();
+    gameUI->drawCross();
     glutSwapBuffers();
 }
 
@@ -92,7 +97,9 @@ void cleanup() {
     delete camera_controller;
     delete camera;
     delete scene;
+    delete stob_0;
     delete inputHandler;
+    delete gameUI;
 }
 
 int main(int argc, char** argv) {
@@ -112,12 +119,16 @@ int main(int argc, char** argv) {
     initOpenGL();
 
     // Create game objects
+    stob_0 = new Stob(Vector3(0.0f, 0.0f, 0.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
+    stob_0->setTestDraw(true);//开启方向箭头绘制
     camera = new Camera(0.0f, 2.0f, 10.0f);
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
+    gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
+    inputHandler = new InputHandler(camera, camera_controller,stob_0, gameUI,WINDOW_WIDTH, WINDOW_HEIGHT);
+
     scene = new Scene();
     scene->initialize();
-    inputHandler = new InputHandler(camera, camera_controller, WINDOW_WIDTH, WINDOW_HEIGHT);
-
+    
     // Hide and center cursor
     glutSetCursor(GLUT_CURSOR_NONE);
     glutWarpPointer(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);

@@ -24,6 +24,7 @@ add_executable(FirstOGL
     src/Stob.cpp
     src/Texture.cpp
     src/camera_controller.cpp
+    src/UI.cpp
 )
 
 # 链接库
