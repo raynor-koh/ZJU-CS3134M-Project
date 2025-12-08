@@ -1,10 +1,12 @@
 #define _USE_MATH_DEFINES
 #include "Camera.h"
+#include "Scene.h"
 #include <GL/glut.h>
 #include <cmath>
 //第一人称摄像头
 Camera::Camera(float x, float y, float z)
-    : x(x), y(y), z(z), yaw(0.0f), pitch(0.0f), moveSpeed(0.2f) {
+    : x(x), y(y), z(z), yaw(0.0f), pitch(0.0f), moveSpeed(0.2f),
+      collisionRadius(0.5f), scene(nullptr) {
     updateVectors();
 }
 
@@ -21,11 +23,18 @@ void Camera::applyView() const {
 }
 
 void Camera::move(float forward, float right) {
-    x += forward * sin(yaw * M_PI / 180.0f) * moveSpeed;
-    z -= forward * cos(yaw * M_PI / 180.0f) * moveSpeed;
+    // Calculate new position
+    float newX = x + forward * sin(yaw * M_PI / 180.0f) * moveSpeed;
+    float newZ = z - forward * cos(yaw * M_PI / 180.0f) * moveSpeed;
 
-    x += right * cos(yaw * M_PI / 180.0f) * moveSpeed;
-    z += right * sin(yaw * M_PI / 180.0f) * moveSpeed;
+    newX += right * cos(yaw * M_PI / 180.0f) * moveSpeed;
+    newZ += right * sin(yaw * M_PI / 180.0f) * moveSpeed;
+
+    // Check collision before applying movement
+    if (scene == nullptr || !scene->checkCollision(newX, newZ, collisionRadius)) {
+        x = newX;
+        z = newZ;
+    }
 
     updateVectors();
 }

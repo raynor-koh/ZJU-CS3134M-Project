@@ -119,15 +119,20 @@ int main(int argc, char** argv) {
     initOpenGL();
 
     // Create game objects
+    scene = new Scene();
+    scene->initialize();
+
     stob_0 = new Stob(Vector3(0.0f, 0.0f, 0.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
     stob_0->setTestDraw(true);//开启方向箭头绘制
+    stob_0->setScene(scene);  // Set scene for collision detection
+
     camera = new Camera(0.0f, 2.0f, 10.0f);
+    camera->setScene(scene);  // Set scene for collision detection
+    camera->setCollisionRadius(0.5f);  // Set player collision radius
+
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler = new InputHandler(camera, camera_controller,stob_0, gameUI,WINDOW_WIDTH, WINDOW_HEIGHT);
-
-    scene = new Scene();
-    scene->initialize();
     
     // Hide and center cursor
     glutSetCursor(GLUT_CURSOR_NONE);

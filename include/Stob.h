@@ -4,6 +4,8 @@
 #include "Texture.h"
 #include "GameObject.h"
 
+class Scene; // Forward declaration
+
 class Stob : GameObject {
 public:
     enum PartType {SIDE=0, CAP=1, TEXTURE=2};
@@ -19,6 +21,11 @@ public:
     void drawDirection();
     void setTestDraw(bool val) { testdraw = val; }
     void drawCoordinateAxes(float x, float y, float z);
+
+    // Collision
+    void setScene(Scene* scene) { this->scene = scene; }
+    float getCollisionRadius() const { return diameter / 2.0f; }
+
 private:
     bool testdraw = false;
     Vector3 position;//空间位置
@@ -30,6 +37,7 @@ private:
     std::vector<Texture> textures;
     GLubyte image[imageheight][imageweight][1];
     bool textureEnabled;
+    Scene* scene;  // Scene reference for collision detection
     void init();
 };
 

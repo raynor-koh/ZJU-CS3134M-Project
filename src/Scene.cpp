@@ -2,7 +2,7 @@
 #include <GL/glut.h>
 
 Scene::Scene()
-    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f) {
+    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f) {
 }
 
 Scene::~Scene() {
@@ -21,6 +21,7 @@ void Scene::initialize() {
 
 void Scene::draw() const {
     drawGround();
+    drawBoundaryWalls();
 
     for (const auto& obj : gameObjects) {
         obj->draw();
@@ -52,4 +53,59 @@ void Scene::drawGround() const {
 
     glEnd();
     glPopMatrix();
+}
+
+void Scene::drawBoundaryWalls() const {
+    glPushMatrix();
+    glColor3f(0.4f, 0.3f, 0.2f); // Brown/tan color for walls
+
+    // North wall (positive Z)
+    glPushMatrix();
+    glTranslatef(0.0f, wallHeight / 2.0f, groundSize);
+    glScalef(groundSize * 2.0f + wallThickness * 2.0f, wallHeight, wallThickness);
+    glutSolidCube(1.0f);
+    glPopMatrix();
+
+    // South wall (negative Z)
+    glPushMatrix();
+    glTranslatef(0.0f, wallHeight / 2.0f, -groundSize);
+    glScalef(groundSize * 2.0f + wallThickness * 2.0f, wallHeight, wallThickness);
+    glutSolidCube(1.0f);
+    glPopMatrix();
+
+    // East wall (positive X)
+    glPushMatrix();
+    glTranslatef(groundSize, wallHeight / 2.0f, 0.0f);
+    glScalef(wallThickness, wallHeight, groundSize * 2.0f);
+    glutSolidCube(1.0f);
+    glPopMatrix();
+
+    // West wall (negative X)
+    glPushMatrix();
+    glTranslatef(-groundSize, wallHeight / 2.0f, 0.0f);
+    glScalef(wallThickness, wallHeight, groundSize * 2.0f);
+    glutSolidCube(1.0f);
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+// Check collision with all objects and boundary walls
+bool Scene::checkCollision(float x, float z, float radius) const {
+    // Check boundary walls collision (simplified - treat as rectangle boundary)
+    float boundaryMin = -groundSize + radius;
+    float boundaryMax = groundSize - radius;
+
+    if (x < boundaryMin || x > boundaryMax || z < boundaryMin || z > boundaryMax) {
+        return true; // Collision with boundary walls
+    }
+
+    // Check collision with all game objects
+    for (const auto& obj : gameObjects) {
+        if (obj->checkAABBCollision(x, z, radius)) {
+            return true; // Collision with object
+        }
+    }
+
+    return false; // No collision
 }

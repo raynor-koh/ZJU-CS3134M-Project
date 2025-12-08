@@ -1,5 +1,8 @@
 # Run this from the project root: powershell -ExecutionPolicy Bypass -File .\buildAndLaunch.ps1
 
+# Save the original directory
+Push-Location
+
 # Create build folder if it doesn't exist
 if (-Not (Test-Path -Path "build")) {
     Write-Host "Creating build directory..."
@@ -23,3 +26,6 @@ if (-Not (Test-Path -Path "Release\resources")) {
 # Change to Release directory and run the executable
 Set-Location Release
 .\FirstOGL.exe
+
+# Return to the original directory
+Pop-Location

@@ -1,5 +1,6 @@
 #define _USE_MATH_DEFINES
 #include "Stob.h"
+#include "Scene.h"
 #include <cmath>
 #include <gl/glut.h>
 #include <iostream>
@@ -7,7 +8,7 @@
 
 Stob::Stob(Vector3 pos, float ih, float idiameter, Color col)
     : GameObject(pos, Vector3(idiameter, ih, idiameter), col), position(pos), size(Vector3(idiameter, ih, idiameter)),
-      diameter(idiameter) {
+      diameter(idiameter), scene(nullptr) {
     init();
 }
 
@@ -54,9 +55,16 @@ void Stob::init() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 void Stob::move_absolute(float dx, float dy, float dz) {
-    position.x += dx;
-    position.y += dy;
-    position.z += dz;
+    // Calculate new position
+    float newX = position.x + dx;
+    float newZ = position.z + dz;
+
+    // Check collision before applying movement
+    if (scene == nullptr || !scene->checkCollision(newX, newZ, diameter / 2.0f)) {
+        position.x = newX;
+        position.y += dy;
+        position.z = newZ;
+    }
 }
 
 void Stob::drawDirection() {//绘制主角头顶的方向箭头，指向鼠标位置
