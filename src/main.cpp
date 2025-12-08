@@ -8,6 +8,8 @@
 #include "Scene.h"
 #include "InputHandler.h"
 #include "camera_controller.h"
+#include "ScreenRecorder.h"
+
 // Window dimensions
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -22,6 +24,7 @@ CameraController* camera_controller = nullptr;
 Scene* scene = nullptr;
 Stob* stob_0 = nullptr;
 InputHandler* inputHandler = nullptr;
+ScreenRecorder* screenRecorder = nullptr;
 
 void initOpenGL() {
     glEnable(GL_DEPTH_TEST);
@@ -68,6 +71,11 @@ void display() {
     stob_0->draw();
     gameUI->drawCross();
     glutSwapBuffers();
+
+    // Capture frame for screen recording if recording is active
+    if (screenRecorder && screenRecorder->isRecording()) {
+        screenRecorder->captureFrame();
+    }
 }
 
 void update(int value) {
@@ -77,6 +85,18 @@ void update(int value) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
+    // Handle screen recording toggle (R key)
+    if (key == 'r' || key == 'R') {
+        if (screenRecorder) {
+            if (screenRecorder->isRecording()) {
+                screenRecorder->stopRecording();
+            } else {
+                screenRecorder->startRecording(""); // Empty string for auto-generated filename
+            }
+        }
+        return;
+    }
+
     inputHandler->handleKeyPress(key);
 }
 
@@ -94,6 +114,7 @@ void reshape(int width, int height) {
 }
 
 void cleanup() {
+    delete screenRecorder;
     delete camera_controller;
     delete camera;
     delete scene;
@@ -133,7 +154,10 @@ int main(int argc, char** argv) {
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler = new InputHandler(camera, camera_controller,stob_0, gameUI,WINDOW_WIDTH, WINDOW_HEIGHT);
-    
+
+    // Initialize screen recorder (30 FPS)
+    screenRecorder = new ScreenRecorder(WINDOW_WIDTH, WINDOW_HEIGHT, 30);
+
     // Hide and center cursor
     glutSetCursor(GLUT_CURSOR_NONE);
     glutWarpPointer(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2);
@@ -151,6 +175,7 @@ int main(int argc, char** argv) {
     std::cout << "  WASD - Move around" << std::endl;
     std::cout << "  Mouse - Look around" << std::endl;
     std::cout << "  Tab - Toggle mouse capture (free cursor for other windows)" << std::endl;
+    std::cout << "  R - Start/Stop screen recording (saves to project root videos/ folder)" << std::endl;
     std::cout << "  ESC - Exit" << std::endl;
 
     // Cleanup on exit
