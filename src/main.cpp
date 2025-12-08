@@ -9,6 +9,8 @@
 #include "InputHandler.h"
 #include "camera_controller.h"
 #include "ScreenRecorder.h"
+#include "Target.h"
+#include "Bullet.h"
 
 // Window dimensions
 const int WINDOW_WIDTH = 1280;
@@ -79,7 +81,15 @@ void display() {
 }
 
 void update(int value) {
+    float deltaTime = 0.016f; // ~60 FPS = 16ms
+
     inputHandler->update();
+    scene->update(deltaTime);
+
+    // Update physics (jumping, gravity)
+    camera->update(deltaTime);
+    stob_0->update(deltaTime);
+
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // ~60 FPS
 }
@@ -113,6 +123,28 @@ void reshape(int width, int height) {
     inputHandler->setWindowSize(width, height);
 }
 
+void mouse(int button, int state, int x, int y) {
+    // Handle left mouse button click to fire bullets
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        Vector3 position, direction;
+
+        if (Active_Third_Camera) {
+            // Third-person camera: shoot from Stob position following the vision direction (crosshair)
+            Vector3 stobPos = stob_0->getPosition();
+            position = Vector3(stobPos.x, stobPos.y + 1.5f, stobPos.z); // Shoot from chest height
+            Vector3 visionDir = stob_0->getVisionDirection();
+            direction = Vector3(-visionDir.x, -visionDir.y, -visionDir.z); // Flip direction
+        } else {
+            // First-person camera: shoot from camera position in look direction
+            position = Vector3(camera->getX(), camera->getY(), camera->getZ());
+            direction = camera->getLookDirection();
+        }
+
+        // Fire bullet from appropriate position in appropriate direction
+        scene->fireBullet(position, direction);
+    }
+}
+
 void cleanup() {
     delete screenRecorder;
     delete camera_controller;
@@ -143,15 +175,21 @@ int main(int argc, char** argv) {
     scene = new Scene();
     scene->initialize();
 
-    stob_0 = new Stob(Vector3(0.0f, 0.0f, 0.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
+    // Add a stationary target for shooting practice
+    Target* target1 = new Target(Vector3(0.0f, 1.5f, -10.0f), Vector3(2.0f, 2.0f, 0.5f), Color(1.0f, 0.0f, 0.0f));
+    scene->addTarget(target1);
+
+    stob_0 = new Stob(Vector3(5.0f, 0.0f, 5.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
     stob_0->setTestDraw(true);//开启方向箭头绘制
     stob_0->setScene(scene);  // Set scene for collision detection
+    stob_0->setVisible(false); // Hide Stob initially (first-person view)
 
-    camera = new Camera(0.0f, 2.0f, 10.0f);
+    camera = new Camera(5.0f, 1.5f, 5.0f);  // Position camera at eye level above Stob
     camera->setScene(scene);  // Set scene for collision detection
     camera->setCollisionRadius(0.5f);  // Set player collision radius
 
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
+    camera_controller->setPlayerPosition(5.0f, 5.0f);  // Sync with Stob's starting position
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler = new InputHandler(camera, camera_controller,stob_0, gameUI,WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -168,12 +206,16 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboard);
     glutKeyboardUpFunc(keyboardUp);
     glutPassiveMotionFunc(mouseMotion);
+    glutMouseFunc(mouse);
     glutTimerFunc(0, update, 0);
 
     // Print controls
     std::cout << "Controls:" << std::endl;
     std::cout << "  WASD - Move around" << std::endl;
-    std::cout << "  Mouse - Look around" << std::endl;
+    std::cout << "  Spacebar - Jump" << std::endl;
+    std::cout << "  Mouse - Look around / Control player direction" << std::endl;
+    std::cout << "  Left Click - Fire bullet (works in both camera modes)" << std::endl;
+    std::cout << "  C - Switch between first-person and third-person camera" << std::endl;
     std::cout << "  Tab - Toggle mouse capture (free cursor for other windows)" << std::endl;
     std::cout << "  R - Start/Stop screen recording (saves to project root videos/ folder)" << std::endl;
     std::cout << "  ESC - Exit" << std::endl;

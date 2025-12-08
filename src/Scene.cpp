@@ -1,5 +1,8 @@
 #include "Scene.h"
+#include "Bullet.h"
+#include "Target.h"
 #include <GL/glut.h>
+#include <cmath>
 
 Scene::Scene()
     : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f) {
@@ -7,6 +10,9 @@ Scene::Scene()
 
 Scene::~Scene() {
     clearGameObjects();
+    clearBullets();
+    // Note: targets are managed separately and should be deleted by the caller
+    targets.clear();
 }
 
 void Scene::initialize() {
@@ -25,6 +31,16 @@ void Scene::draw() const {
 
     for (const auto& obj : gameObjects) {
         obj->draw();
+    }
+
+    // Draw targets
+    for (const auto& target : targets) {
+        target->draw();
+    }
+
+    // Draw bullets
+    for (const auto& bullet : bullets) {
+        bullet->draw();
     }
 }
 
@@ -108,4 +124,91 @@ bool Scene::checkCollision(float x, float z, float radius) const {
     }
 
     return false; // No collision
+}
+
+// Update scene (bullets, physics, etc.)
+void Scene::update(float deltaTime) {
+    updateBullets(deltaTime);
+    checkBulletCollisions();
+
+    // Remove dead targets
+    for (auto it = targets.begin(); it != targets.end();) {
+        if (!(*it)->isAlive()) {
+            delete *it;
+            it = targets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+// Add a target to the scene
+void Scene::addTarget(Target* target) {
+    targets.push_back(target);
+}
+
+// Fire a bullet from a position in a direction
+void Scene::fireBullet(const Vector3& position, const Vector3& direction) {
+    bullets.push_back(new Bullet(position, direction));
+}
+
+// Clear all bullets
+void Scene::clearBullets() {
+    for (auto& bullet : bullets) {
+        delete bullet;
+    }
+    bullets.clear();
+}
+
+// Update all bullets (movement, lifetime)
+void Scene::updateBullets(float deltaTime) {
+    // Remove bullets that should be deleted
+    for (auto it = bullets.begin(); it != bullets.end();) {
+        (*it)->update(deltaTime);
+        if ((*it)->shouldRemove()) {
+            delete *it;
+            it = bullets.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+// Check for collisions between bullets and targets
+void Scene::checkBulletCollisions() {
+    for (auto& bullet : bullets) {
+        if (!bullet->isActive()) continue;
+
+        Vector3 bulletPos = bullet->getPosition();
+        float bulletRadius = bullet->getRadius();
+
+        // Check collision with each target
+        for (auto& target : targets) {
+            Vector3 targetPos = target->getPosition();
+            Vector3 targetSize = target->getSize();
+
+            // Simple sphere-to-box collision detection
+            // Find closest point on box to bullet sphere
+            float closestX = std::max(targetPos.x - targetSize.x / 2.0f,
+                                     std::min(bulletPos.x, targetPos.x + targetSize.x / 2.0f));
+            float closestY = std::max(targetPos.y - targetSize.y / 2.0f,
+                                     std::min(bulletPos.y, targetPos.y + targetSize.y / 2.0f));
+            float closestZ = std::max(targetPos.z - targetSize.z / 2.0f,
+                                     std::min(bulletPos.z, targetPos.z + targetSize.z / 2.0f));
+
+            // Calculate distance
+            float distX = bulletPos.x - closestX;
+            float distY = bulletPos.y - closestY;
+            float distZ = bulletPos.z - closestZ;
+            float distanceSquared = distX * distX + distY * distY + distZ * distZ;
+
+            // Check if collision occurred
+            if (distanceSquared < (bulletRadius * bulletRadius)) {
+                // Deal damage to the target
+                target->takeDamage(bullet->getDamage());
+                bullet->deactivate();
+                break; // Bullet can only hit one target
+            }
+        }
+    }
 }

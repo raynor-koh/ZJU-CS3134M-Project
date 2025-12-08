@@ -11,6 +11,11 @@ void CameraController::movePlayerAbsolute(float dx, float dy) {
     playerY += dy;
 }
 
+void CameraController::setPlayerPosition(float x, float y) {
+    playerX = x;
+    playerY = y;
+}
+
 void CameraController::updateRotation(int mouseX, int mouseY) {
     float centerX = windowWidth / 2.0f;
     float centerY = windowHeight / 2.0f;
@@ -42,4 +47,21 @@ void CameraController::reset() {
     playerX = 0.0f;
     playerY = 0.0f;
     playerRotation = 0.0f;
+}
+
+Vector3 CameraController::getShootPosition() const {
+    // Return position slightly above the player's center
+    return Vector3(playerX, 1.5f, playerY);
+}
+
+Vector3 CameraController::getShootDirection() const {
+    // Calculate forward direction based on player rotation
+    // playerRotation is in degrees, with 0 pointing up (negative Z)
+    float radians = playerRotation * M_PI / 180.0f;
+
+    // Calculate direction vector (horizontal plane, no vertical component)
+    float dx = sin(radians);
+    float dz = -cos(radians);
+
+    return Vector3(dx, 0.0f, dz);
 }

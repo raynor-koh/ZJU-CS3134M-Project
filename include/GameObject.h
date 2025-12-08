@@ -21,8 +21,9 @@ enum class CollisionType {
 class GameObject {
 public:
     GameObject(const Vector3& position, const Vector3& size, const Color& color);
+    virtual ~GameObject() = default;  // Make GameObject polymorphic
 
-    void draw() const;
+    virtual void draw() const;  // Make draw virtual so derived classes can override
 
     // Getters
     Vector3 getPosition() const { return position; }
@@ -37,7 +38,7 @@ public:
 
     // Collision
     CollisionType getCollisionType() const { return collisionType; }
-    bool checkAABBCollision(float x, float z, float radius) const;
+    virtual bool checkAABBCollision(float x, float z, float radius) const;
 
 private:
     Vector3 position;

@@ -31,6 +31,13 @@ void InputHandler::handleKeyPress(unsigned char key) {
     else if (key == 'c' || key == 'C') { // 'C' 键 - 切换摄像机
         toggleCamera();
     }
+    else if (key == 32) { // Spacebar - jump
+        if (Active_Third_Camera) {
+            controlledStob->jump();
+        } else {
+            camera->jump();
+        }
+    }
 }
 
 void InputHandler::handleKeyRelease(unsigned char key) {
@@ -130,9 +137,14 @@ void InputHandler::update() {
         if(length > 0.001f) {
             moveX = moveX / length * moveSpeed * deltaTime;
             moveY = moveY / length * moveSpeed * deltaTime;
-            
-            camera_controller->movePlayerAbsolute(moveX, moveY);
+
+            // Move the Stob (player character)
             controlledStob->move_absolute(moveX, 0.0f, moveY);
+
+            // Sync camera position with Stob's position
+            Vector3 stobPos = controlledStob->getPosition();
+            camera_controller->setPlayerPosition(stobPos.x, stobPos.z);
+
             glutPostRedisplay();
         }
     }
@@ -154,5 +166,31 @@ void InputHandler::toggleMouseCapture() {
     }
 }
 void InputHandler::toggleCamera() {
+    if (Active_Third_Camera) {
+        // Switching from third-person to first-person
+        // Move first-person camera to Stob's position (eye level)
+        Vector3 stobPos = controlledStob->getPosition();
+        camera->setPosition(stobPos.x, stobPos.y + 1.5f, stobPos.z);
+
+        // Hide Stob in first-person view
+        controlledStob->setVisible(false);
+    } else {
+        // Switching from first-person to third-person
+        // Move Stob to first-person camera's position
+        float camX = camera->getX();
+        float camY = camera->getY();
+        float camZ = camera->getZ();
+
+        // Set Stob position (ground level)
+        Vector3 newStobPos(camX, 0.0f, camZ);
+        controlledStob->setPosition(newStobPos);
+
+        // Sync third-person camera controller
+        camera_controller->setPlayerPosition(camX, camZ);
+
+        // Show Stob in third-person view
+        controlledStob->setVisible(true);
+    }
+
     Active_Third_Camera = !Active_Third_Camera;
 }

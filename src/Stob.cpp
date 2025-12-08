@@ -8,7 +8,7 @@
 
 Stob::Stob(Vector3 pos, float ih, float idiameter, Color col)
     : GameObject(pos, Vector3(idiameter, ih, idiameter), col), position(pos), size(Vector3(idiameter, ih, idiameter)),
-      diameter(idiameter), scene(nullptr) {
+      diameter(idiameter), scene(nullptr), verticalVelocity(0.0f), groundLevel(0.0f), isOnGround(true) {
     init();
 }
 
@@ -59,8 +59,9 @@ void Stob::move_absolute(float dx, float dy, float dz) {
     float newX = position.x + dx;
     float newZ = position.z + dz;
 
-    // Check collision before applying movement
-    if (scene == nullptr || !scene->checkCollision(newX, newZ, diameter / 2.0f)) {
+    // Check collision before moving
+    // Note: diameter is actually the radius of the rendered cylinder
+    if (scene == nullptr || !scene->checkCollision(newX, newZ, diameter)) {
         position.x = newX;
         position.y += dy;
         position.z = newZ;
@@ -118,6 +119,8 @@ void Stob::drawCoordinateAxes(float x, float y, float z) {
 }
 
 void Stob::draw() {
+    if (!visible) return; // Don't draw if not visible
+
     glPushMatrix();
     glTranslatef(position.x, position.y, position.z);
     glScalef(size.x, size.y, size.z);
@@ -182,4 +185,30 @@ void Stob::draw() {
         glPushMatrix();
     }
     glPopMatrix();
+}
+
+void Stob::update(float deltaTime) {
+    // Apply gravity
+    if (!isOnGround) {
+        verticalVelocity -= GRAVITY * deltaTime;
+    }
+
+    // Update Y position based on vertical velocity
+    position.y += verticalVelocity * deltaTime;
+
+    // Ground collision
+    if (position.y <= groundLevel) {
+        position.y = groundLevel;
+        verticalVelocity = 0.0f;
+        isOnGround = true;
+    } else {
+        isOnGround = false;
+    }
+}
+
+void Stob::jump() {
+    if (isOnGround) {
+        verticalVelocity = JUMP_VELOCITY;
+        isOnGround = false;
+    }
 }

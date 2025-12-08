@@ -32,6 +32,8 @@ add_executable(FirstOGL
     src/camera_controller.cpp
     src/UI.cpp
     src/ScreenRecorder.cpp
+    src/Target.cpp
+    src/Bullet.cpp
 )
 
 # 链接库

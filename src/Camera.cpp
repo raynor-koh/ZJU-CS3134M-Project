@@ -6,7 +6,8 @@
 //第一人称摄像头
 Camera::Camera(float x, float y, float z)
     : x(x), y(y), z(z), yaw(0.0f), pitch(0.0f), moveSpeed(0.2f),
-      collisionRadius(0.5f), scene(nullptr) {
+      collisionRadius(0.5f), scene(nullptr), verticalVelocity(0.0f),
+      groundLevel(1.5f), isOnGround(true) {
     updateVectors();
 }
 
@@ -55,4 +56,32 @@ void Camera::setPosition(float x, float y, float z) {
     this->y = y;
     this->z = z;
     updateVectors();
+}
+
+void Camera::update(float deltaTime) {
+    // Apply gravity
+    if (!isOnGround) {
+        verticalVelocity -= GRAVITY * deltaTime;
+    }
+
+    // Update Y position based on vertical velocity
+    y += verticalVelocity * deltaTime;
+
+    // Ground collision
+    if (y <= groundLevel) {
+        y = groundLevel;
+        verticalVelocity = 0.0f;
+        isOnGround = true;
+    } else {
+        isOnGround = false;
+    }
+
+    updateVectors();
+}
+
+void Camera::jump() {
+    if (isOnGround) {
+        verticalVelocity = JUMP_VELOCITY;
+        isOnGround = false;
+    }
 }
