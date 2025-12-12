@@ -25,6 +25,7 @@ Camera* camera = nullptr;
 CameraController* camera_controller = nullptr;
 Scene* scene = nullptr;
 Stob* stob_0 = nullptr;
+Player* player = nullptr;
 InputHandler* inputHandler = nullptr;
 ScreenRecorder* screenRecorder = nullptr;
 
@@ -70,7 +71,8 @@ void display() {
     // Draw the scene
     scene->draw();
     //Draw the controlled Stob
-    stob_0->draw();
+    //stob_0->draw();
+    player->draw();
     gameUI->drawCross();
     glutSwapBuffers();
 
@@ -88,7 +90,7 @@ void update(int value) {
 
     // Update physics (jumping, gravity)
     camera->update(deltaTime);
-    stob_0->update(deltaTime);
+    player->update(deltaTime);
 
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // ~60 FPS
@@ -124,25 +126,7 @@ void reshape(int width, int height) {
 }
 
 void mouse(int button, int state, int x, int y) {
-    // Handle left mouse button click to fire bullets
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-        Vector3 position, direction;
-
-        if (Active_Third_Camera) {
-            // Third-person camera: shoot from Stob position following the vision direction (crosshair)
-            Vector3 stobPos = stob_0->getPosition();
-            position = Vector3(stobPos.x, stobPos.y + 1.5f, stobPos.z); // Shoot from chest height
-            Vector3 visionDir = stob_0->getVisionDirection();
-            direction = Vector3(-visionDir.x, -visionDir.y, -visionDir.z); // Flip direction
-        } else {
-            // First-person camera: shoot from camera position in look direction
-            position = Vector3(camera->getX(), camera->getY(), camera->getZ());
-            direction = camera->getLookDirection();
-        }
-
-        // Fire bullet from appropriate position in appropriate direction
-        scene->fireBullet(position, direction);
-    }
+    inputHandler->handleMouseClick(button, state, x, y);
 }
 
 void cleanup() {
@@ -190,8 +174,9 @@ int main(int argc, char** argv) {
 
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     camera_controller->setPlayerPosition(5.0f, 5.0f);  // Sync with Stob's starting position
+    player = new Player(scene);
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
-    inputHandler = new InputHandler(camera, camera_controller,stob_0, gameUI,WINDOW_WIDTH, WINDOW_HEIGHT);
+    inputHandler = new InputHandler(camera, camera_controller, scene, stob_0, player, gameUI, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // Initialize screen recorder (30 FPS)
     screenRecorder = new ScreenRecorder(WINDOW_WIDTH, WINDOW_HEIGHT, 30);
