@@ -36,6 +36,8 @@ void Camera::move(float forward, float right) {
         x = newX;
         z = newZ;
     }
+    x = newX;
+    z = newZ;
 
     updateVectors();
 }
