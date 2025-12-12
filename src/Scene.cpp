@@ -1,6 +1,9 @@
 #include "Scene.h"
 #include "Bullet.h"
 #include "Target.h"
+#include "Shapes.h"
+#include "Enemy.h"
+#include "CollisionDetector.h"
 #include <GL/glut.h>
 #include <cmath>
 
@@ -17,12 +20,23 @@ Scene::~Scene() {
 
 void Scene::initialize() {
     // Add default objects to the scene
-    addGameObject(new GameObject(Vector3(0.0f, 1.0f, 0.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
-    addGameObject(new GameObject(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));
-    addGameObject(new GameObject(Vector3(-4.0f, 1.5f, 2.0f), Vector3(3.0f, 3.0f, 3.0f), Color(0.8f, 0.8f, 0.3f)));
-    addGameObject(new GameObject(Vector3(8.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
-    addGameObject(new GameObject(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.5f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
-    addGameObject(new GameObject(Vector3(3.0f, 2.0f, 8.0f), Vector3(4.0f, 4.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
+    // addGameObject(new GameObject(Vector3(0.0f, 1.0f, 0.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
+    // addGameObject(new GameObject(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));
+    // addGameObject(new GameObject(Vector3(-4.0f, 1.5f, 2.0f), Vector3(3.0f, 3.0f, 3.0f), Color(0.8f, 0.8f, 0.3f)));
+    // addGameObject(new GameObject(Vector3(8.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
+    // addGameObject(new GameObject(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.5f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
+    // addGameObject(new GameObject(Vector3(3.0f, 2.0f, 8.0f), Vector3(4.0f, 4.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
+    addTexture(new Texture("resources/textures/WoodCap.bmp"));
+    addEnemy(new Enemy(Vector3(-5.0f, 0.0f, -5.0f), Color(0.7f, 1.0f, 0.3f), Color(0.1f, 0.3f, 0.5f)));
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.0f, 3.0f), 1.0f, 1.0f, Color(0.1f, 1.0f, 1.0f)));
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 5.0f), 1.0f, 1.0f, Color(0.4f, 0.1f, 0.9f)));
+    addShape(std::make_shared<Sphere>(Vector3(5.0f, 0.8f, 4.2f), 0.4f, Color(0.8f, 0.2f, 0.6f)));
+    addShape(std::make_shared<Cube>(Vector3(0.0f, 1.0f, 0.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
+    addShape(std::make_shared<Cube>(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));
+    addShape(std::make_shared<Cube>(Vector3(-4.0f, 1.5f, 2.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));
+    addShape(std::make_shared<Cube>(Vector3(10.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
+    addShape(std::make_shared<Cube>(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
+    addShape(std::make_shared<Cube>(Vector3(3.0f, 2.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
 }
 
 void Scene::draw() const {
@@ -42,6 +56,15 @@ void Scene::draw() const {
     for (const auto& bullet : bullets) {
         bullet->draw();
     }
+
+    // Draw enemies
+    for (const auto& enemy : enemies) {
+        enemy->draw();
+    }
+
+    for (const auto& shape : objects) {
+        shape->draw();
+    }
 }
 
 void Scene::addGameObject(GameObject* obj) {
@@ -53,6 +76,18 @@ void Scene::clearGameObjects() {
         delete obj;
     }
     gameObjects.clear();
+}
+
+void Scene::addShape(std::shared_ptr<Shape> shape) {
+    objects.push_back(shape);
+}
+
+void Scene::addTexture(Texture* texture) {
+    textures.push_back(texture);
+}
+
+void Scene::addEnemy(Enemy* enemy) {
+    enemies.push_back(enemy);
 }
 
 void Scene::drawGround() const {
@@ -108,6 +143,7 @@ void Scene::drawBoundaryWalls() const {
 
 // Check collision with all objects and boundary walls
 bool Scene::checkCollision(float x, float z, float radius) const {
+    return false;
     // Check boundary walls collision (simplified - treat as rectangle boundary)
     float boundaryMin = -groundSize + radius;
     float boundaryMax = groundSize - radius;
@@ -128,16 +164,36 @@ bool Scene::checkCollision(float x, float z, float radius) const {
 
 // Update scene (bullets, physics, etc.)
 void Scene::update(float deltaTime) {
-    updateBullets(deltaTime);
+    for (auto& bullet : bullets) bullet->move(deltaTime);
     checkBulletCollisions();
+    for (auto& bullet : bullets) {
+        if(bullet->shouldRemove()) {
+            delete bullet;
+            bullets.erase(std::remove(bullets.begin(), bullets.end(), bullet), bullets.end());
+        }
+    }
+}
 
-    // Remove dead targets
-    for (auto it = targets.begin(); it != targets.end();) {
-        if (!(*it)->isAlive()) {
-            delete *it;
-            it = targets.erase(it);
-        } else {
-            ++it;
+void Scene::checkBulletCollisions() {
+    for (auto& bullet : bullets) {
+        if(!bullet->isActive()) continue;
+        for (auto& enemy : enemies) {
+            if (CollisionDetector::checkCollision(bullet->getShape(), enemy->getHeadShape()) ||
+                CollisionDetector::checkCollision(bullet->getShape(), enemy->getBodyShape())) {
+                bullet->deactivate();
+                enemy->takeDamage(bullet->getDamage());
+                if(enemy->isAlive() == false) {
+                    delete enemy;
+                    enemies.erase(std::remove(enemies.begin(), enemies.end(), enemy), enemies.end());
+                }
+                break;
+            }
+        }
+        for (auto& obj : objects) {
+            if (CollisionDetector::checkCollision(bullet->getShape(), obj.get())) {
+                bullet->deactivate();
+                break;
+            }
         }
     }
 }
@@ -158,57 +214,4 @@ void Scene::clearBullets() {
         delete bullet;
     }
     bullets.clear();
-}
-
-// Update all bullets (movement, lifetime)
-void Scene::updateBullets(float deltaTime) {
-    // Remove bullets that should be deleted
-    for (auto it = bullets.begin(); it != bullets.end();) {
-        (*it)->update(deltaTime);
-        if ((*it)->shouldRemove()) {
-            delete *it;
-            it = bullets.erase(it);
-        } else {
-            ++it;
-        }
-    }
-}
-
-// Check for collisions between bullets and targets
-void Scene::checkBulletCollisions() {
-    for (auto& bullet : bullets) {
-        if (!bullet->isActive()) continue;
-
-        Vector3 bulletPos = bullet->getPosition();
-        float bulletRadius = bullet->getRadius();
-
-        // Check collision with each target
-        for (auto& target : targets) {
-            Vector3 targetPos = target->getPosition();
-            Vector3 targetSize = target->getSize();
-
-            // Simple sphere-to-box collision detection
-            // Find closest point on box to bullet sphere
-            float closestX = std::max(targetPos.x - targetSize.x / 2.0f,
-                                     std::min(bulletPos.x, targetPos.x + targetSize.x / 2.0f));
-            float closestY = std::max(targetPos.y - targetSize.y / 2.0f,
-                                     std::min(bulletPos.y, targetPos.y + targetSize.y / 2.0f));
-            float closestZ = std::max(targetPos.z - targetSize.z / 2.0f,
-                                     std::min(bulletPos.z, targetPos.z + targetSize.z / 2.0f));
-
-            // Calculate distance
-            float distX = bulletPos.x - closestX;
-            float distY = bulletPos.y - closestY;
-            float distZ = bulletPos.z - closestZ;
-            float distanceSquared = distX * distX + distY * distY + distZ * distZ;
-
-            // Check if collision occurred
-            if (distanceSquared < (bulletRadius * bulletRadius)) {
-                // Deal damage to the target
-                target->takeDamage(bullet->getDamage());
-                bullet->deactivate();
-                break; // Bullet can only hit one target
-            }
-        }
-    }
 }
