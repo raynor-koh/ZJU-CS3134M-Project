@@ -1,14 +1,5 @@
 #pragma once
-
-struct Color {
-    float r, g, b;
-    Color(float r = 1.0f, float g = 1.0f, float b = 1.0f) : r(r), g(g), b(b) {}
-};
-
-struct Vector3 {
-    float x, y, z;
-    Vector3(float x = 0.0f, float y = 0.0f, float z = 0.0f) : x(x), y(y), z(z) {}
-};
+#include "Vector3.h"
 
 // Collision types for different object behaviors
 enum class CollisionType {
