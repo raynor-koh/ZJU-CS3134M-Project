@@ -3,12 +3,15 @@
 #include "camera_controller.h"
 #include "Stob.h"
 #include "UI.h"
+#include "Player.h"
+#include "Scene.h"
 class InputHandler {
 public:
-    InputHandler(Camera* camera, CameraController* camera_controller, Stob* controlledStob, UI* gameUI,int windowWidth, int windowHeight);
+    InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI,int windowWidth, int windowHeight);
     // 按键按下的处理
     void handleKeyPress(unsigned char key);
     void handleKeyRelease(unsigned char key);
+    void handleMouseClick(int button, int state, int x, int y);
 
     // 鼠标移动的处理
     void handleMouseMotion(int x, int y);
@@ -26,7 +29,9 @@ private:
     float mouseX, mouseY; // 当前鼠标位置（窗口坐标）
     Camera* camera = nullptr;                  // 第一人称摄像机
     CameraController* camera_controller = nullptr;  // 第三人称摄像机
+    Scene* scene = nullptr;
     Stob* controlledStob = nullptr;        // 被控制的角色对象
+    Player* player = nullptr;
     UI* gameUI = nullptr;                      // 游戏UI对象
     bool keys[256];
     int windowWidth, windowHeight;
