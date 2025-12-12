@@ -1,5 +1,5 @@
 #pragma once
-#include "GameObject.h"  // For Vector3
+#include "Vector3.h"  // For Vector3
 
 class Scene; // Forward declaration
 
