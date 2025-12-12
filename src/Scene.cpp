@@ -56,15 +56,16 @@ void Scene::draw() const {
     for (const auto& bullet : bullets) {
         bullet->draw();
     }
-
+    
+    for (const auto& shape : objects) {
+        shape->draw();
+    }
+    
     // Draw enemies
     for (const auto& enemy : enemies) {
         enemy->draw();
     }
 
-    for (const auto& shape : objects) {
-        shape->draw();
-    }
 }
 
 void Scene::addGameObject(GameObject* obj) {
