@@ -2,11 +2,10 @@
 #include <GL/glut.h>
 #include <cmath>
 #include <cstdlib>
-// #include <iostream>
-// #define disp(x) std::cout << x << std::endl;
+#include <iostream>
 extern bool Active_Third_Camera; // 声明外部变量
-InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, Stob* controlledStob, UI* gameUI,int windowWidth, int windowHeight)
-    : camera(camera), camera_controller(camera_controller), controlledStob(controlledStob), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
+InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight)
+    : camera(camera), camera_controller(camera_controller), scene(scene), controlledStob(controlledStob), player(player), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
       firstMouse(true), mouseCaptured(true), mouseSensitivity(0.1f) {
 
     for (int i = 0; i < 256; i++) {
@@ -15,8 +14,6 @@ InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, 
 
     lastMouseX = windowWidth / 2;
     lastMouseY = windowHeight / 2;
-
-    
 }
 
 void InputHandler::handleKeyPress(unsigned char key) {
@@ -33,7 +30,7 @@ void InputHandler::handleKeyPress(unsigned char key) {
     }
     else if (key == 32) { // Spacebar - jump
         if (Active_Third_Camera) {
-            controlledStob->jump();
+            player->jump();
         } else {
             camera->jump();
         }
@@ -44,13 +41,31 @@ void InputHandler::handleKeyRelease(unsigned char key) {
     keys[key] = false;
 }
 
+void InputHandler::handleMouseClick(int button, int state, int x, int y) {
+    if (state == GLUT_DOWN) {
+        if (button == GLUT_LEFT_BUTTON) {
+            Vector3 position, direction;
+
+            if (Active_Third_Camera) {
+                // Third-person camera: shoot from Stob position following the vision direction (crosshair)
+                position = player->getPosition() + Vector3(0.0f, 0.5f, 0.0f);
+                direction = -player->getVisionDirection();
+            } else {
+                // First-person camera: shoot from camera position in look direction
+                position = Vector3(camera->getX(), camera->getY(), camera->getZ());
+                direction = camera->getLookDirection();
+            }
+
+            scene->fireBullet(position, direction.normalized());
+        }
+    }
+}
+
 void InputHandler::handleMouseMotion(int x, int y) {
     
     if (!mouseCaptured) {
         return; // Don't process mouse movement when not captured
     }
-
-    
 
     if (Active_Third_Camera == false){ 
         
@@ -93,7 +108,7 @@ void InputHandler::handleMouseMotion(int x, int y) {
         float yaw = atan2f(deltaY, deltaX); // 计算朝向角度
         dir.x = cosf(yaw);
         dir.z = sinf(yaw);
-        controlledStob->updateVisionDirection(dir);
+        player->updateVisionDirection(dir);
     }
 
     
@@ -109,9 +124,13 @@ void InputHandler::update() {
         if (keys['s'] || keys['S']) forward -= 1.0f;
         if (keys['a'] || keys['A']) right -= 1.0f;
         if (keys['d'] || keys['D']) right += 1.0f;
-
         if (forward != 0.0f || right != 0.0f) {
             camera->move(forward, right);
+
+            player->setPosition(Vector3(camera->getX(), camera->getY()-1.5f, camera->getZ()));
+            if (player->checkSceneCollision()) {
+                camera->move(-forward, -right);
+            }
         }
     }
     else if (Active_Third_Camera == true){
@@ -139,11 +158,16 @@ void InputHandler::update() {
             moveY = moveY / length * moveSpeed * deltaTime;
 
             // Move the Stob (player character)
-            controlledStob->move_absolute(moveX, 0.0f, moveY);
+            // controlledStob->move_absolute(moveX, 0.0f, moveY);
+            player->moveAbsolute(moveX, 0.0f, moveY);
+            if(player->checkSceneCollision()) {
+                player->moveAbsolute(-moveX, 0.0f, -moveY);
+                camera_controller->movePlayerAbsolute(-moveX, -moveY);
+            }
 
-            // Sync camera position with Stob's position
-            Vector3 stobPos = controlledStob->getPosition();
-            camera_controller->setPlayerPosition(stobPos.x, stobPos.z);
+            // Sync camera position with Player's position
+            Vector3 playerPos = player->getPosition();
+            camera_controller->setPlayerPosition(playerPos.x, playerPos.z);
 
             glutPostRedisplay();
         }
@@ -169,11 +193,11 @@ void InputHandler::toggleCamera() {
     if (Active_Third_Camera) {
         // Switching from third-person to first-person
         // Move first-person camera to Stob's position (eye level)
-        Vector3 stobPos = controlledStob->getPosition();
-        camera->setPosition(stobPos.x, stobPos.y + 1.5f, stobPos.z);
+        Vector3 playerPos = player->getPosition();
+        camera->setPosition(playerPos.x, playerPos.y + 1.5f, playerPos.z);
 
         // Hide Stob in first-person view
-        controlledStob->setVisible(false);
+        player->setVisible(false);
     } else {
         // Switching from first-person to third-person
         // Move Stob to first-person camera's position
@@ -182,14 +206,17 @@ void InputHandler::toggleCamera() {
         float camZ = camera->getZ();
 
         // Set Stob position (ground level)
-        Vector3 newStobPos(camX, 0.0f, camZ);
-        controlledStob->setPosition(newStobPos);
+        // Vector3 newStobPos(camX, 0.0f, camZ);
+        // controlledStob->setPosition(newStobPos);
+        Vector3 newPlayerPos(camX, 0.0f, camZ);
+        player->setPosition(newPlayerPos);
 
         // Sync third-person camera controller
         camera_controller->setPlayerPosition(camX, camZ);
 
         // Show Stob in third-person view
         controlledStob->setVisible(true);
+        player->setVisible(true);
     }
 
     Active_Third_Camera = !Active_Third_Camera;
