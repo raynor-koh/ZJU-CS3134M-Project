@@ -1,30 +1,34 @@
 #pragma once
-#include "GameObject.h"
+#include "Shapes.h"
 
-class Bullet {
+class Bullet
+{
 public:
-    Bullet(const Vector3& position, const Vector3& direction, float speed = 50.0f, float damage = 25.0f);
+    Bullet(Vector3 ipos, Vector3 idirection, float idamage = 1.0f);
+    void draw();
+    void move(float dt);
 
-    void update(float deltaTime);
-    void draw() const;
+    void setPosition(Vector3 ipos) {position = ipos;}
+    void setColor(Color icolor);
+    void setDamage(float d) {damage = d;}
+    void deactivate() {active = false;}
 
-    // Getters
-    Vector3 getPosition() const { return position; }
-    float getRadius() const { return radius; }
-    float getDamage() const { return damage; }
-    bool isActive() const { return active; }
-    void deactivate() { active = false; }
-
-    // Check if bullet has traveled too far or lived too long
-    bool shouldRemove() const;
-
+    Vector3 getPosition() {return position;}
+    Color getColor() {return sphere->getColor();}
+    Shape* getShape() {return (Shape*)sphere;}
+    float getDamage() {return damage;}
+    bool isActive() {return active;}
+    
+    bool shouldRemove() const {return !active || life >= maxLife ;};
 private:
+    Sphere* sphere;
     Vector3 position;
-    Vector3 velocity;  // Direction * speed
+    Vector3 direction;
     float speed;
-    float radius;
-    float damage;      // Damage dealt to targets
-    float lifetime;    // Time since bullet was created
-    float maxLifetime; // Maximum time bullet can exist
+
     bool active;
+
+    float damage;
+    float life;
+    float maxLife;
 };
