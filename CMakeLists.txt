@@ -34,6 +34,10 @@ add_executable(FirstOGL
     src/ScreenRecorder.cpp
     src/Target.cpp
     src/Bullet.cpp
+    src/Shapes.cpp
+    src/Player.cpp
+    src/Enemy.cpp
+    src/CollisionDetector.cpp
 )
 
 # 链接库
