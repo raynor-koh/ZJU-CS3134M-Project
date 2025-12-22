@@ -252,3 +252,211 @@ void Cube::draw() {
     glEnd();
     glPopMatrix();
 }
+
+// Tessellation implementations for mesh export
+
+void Cylinder::tessellate(std::vector<Vector3>& positions,
+                          std::vector<Vector3>& normals,
+                          std::vector<int>& indices) const {
+    positions.clear();
+    normals.clear();
+    indices.clear();
+
+    // Generate vertices for bottom cap, top cap, and sides
+    // Bottom cap center
+    positions.push_back(Vector3(0.0f, -0.5f, 0.0f));
+    normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+    int bottomCenterIdx = 0;
+
+    // Top cap center
+    positions.push_back(Vector3(0.0f, 0.5f, 0.0f));
+    normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+    int topCenterIdx = 1;
+
+    // Generate ring vertices for both caps and sides
+    for (int i = 0; i <= slices; i++) {
+        float theta = (2.0f * M_PI * i) / slices;
+        float x = cosf(theta);
+        float z = sinf(theta);
+
+        // Bottom ring vertex (for caps)
+        positions.push_back(Vector3(x, -0.5f, z));
+        normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+
+        // Top ring vertex (for caps)
+        positions.push_back(Vector3(x, 0.5f, z));
+        normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+
+        // Bottom ring vertex (for sides) - outward normals
+        positions.push_back(Vector3(x, -0.5f, z));
+        normals.push_back(Vector3(x, 0.0f, z).normalized());
+
+        // Top ring vertex (for sides) - outward normals
+        positions.push_back(Vector3(x, 0.5f, z));
+        normals.push_back(Vector3(x, 0.0f, z).normalized());
+    }
+
+    // Generate indices for caps and sides
+    for (int i = 0; i < slices; i++) {
+        int baseIdx = 2 + i * 4;
+
+        // Bottom cap triangle (center, edge1, edge2)
+        indices.push_back(bottomCenterIdx);
+        indices.push_back(baseIdx + 4);  // next bottom cap vertex
+        indices.push_back(baseIdx);      // current bottom cap vertex
+
+        // Top cap triangle (center, edge1, edge2)
+        indices.push_back(topCenterIdx);
+        indices.push_back(baseIdx + 1);  // current top cap vertex
+        indices.push_back(baseIdx + 5);  // next top cap vertex
+
+        // Side quad split into 2 triangles
+        int sideCurBottom = baseIdx + 2;
+        int sideCurTop = baseIdx + 3;
+        int sideNextBottom = baseIdx + 6;
+        int sideNextTop = baseIdx + 7;
+
+        // Triangle 1
+        indices.push_back(sideCurBottom);
+        indices.push_back(sideNextBottom);
+        indices.push_back(sideNextTop);
+
+        // Triangle 2
+        indices.push_back(sideCurBottom);
+        indices.push_back(sideNextTop);
+        indices.push_back(sideCurTop);
+    }
+}
+
+void Sphere::tessellate(std::vector<Vector3>& positions,
+                       std::vector<Vector3>& normals,
+                       std::vector<int>& indices) const {
+    positions.clear();
+    normals.clear();
+    indices.clear();
+
+    // Generate vertices using spherical coordinates
+    for (int j = 0; j <= stacks; j++) {
+        float phi = (M_PI * j) / stacks;
+        float sinPhi = sinf(phi);
+        float cosPhi = cosf(phi);
+
+        for (int i = 0; i <= slices; i++) {
+            float theta = (2.0f * M_PI * i) / slices;
+            float sinTheta = sinf(theta);
+            float cosTheta = cosf(theta);
+
+            // Position (unit sphere, will be scaled later)
+            float x = cosTheta * sinPhi;
+            float y = sinTheta * sinPhi;
+            float z = cosPhi;
+
+            positions.push_back(Vector3(x, y, z));
+            // For sphere, normal equals normalized position
+            normals.push_back(Vector3(x, y, z).normalized());
+        }
+    }
+
+    // Generate triangle indices from the grid
+    for (int j = 0; j < stacks; j++) {
+        for (int i = 0; i < slices; i++) {
+            int idx0 = j * (slices + 1) + i;
+            int idx1 = idx0 + 1;
+            int idx2 = (j + 1) * (slices + 1) + i;
+            int idx3 = idx2 + 1;
+
+            // Quad split into 2 triangles
+            // Triangle 1
+            indices.push_back(idx0);
+            indices.push_back(idx2);
+            indices.push_back(idx1);
+
+            // Triangle 2
+            indices.push_back(idx1);
+            indices.push_back(idx2);
+            indices.push_back(idx3);
+        }
+    }
+}
+
+void Cube::tessellate(std::vector<Vector3>& positions,
+                     std::vector<Vector3>& normals,
+                     std::vector<int>& indices) const {
+    positions.clear();
+    normals.clear();
+    indices.clear();
+
+    // Cube vertices (8 corners, but we need 24 for unique normals per face)
+    // Front face (+Z)
+    positions.push_back(Vector3(1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, 1.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, 1.0f));
+    positions.push_back(Vector3(-1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, 1.0f));
+    positions.push_back(Vector3(1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, 1.0f));
+
+    // Back face (-Z)
+    positions.push_back(Vector3(1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, -1.0f));
+    positions.push_back(Vector3(-1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, -1.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, -1.0f));
+    positions.push_back(Vector3(1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 0.0f, -1.0f));
+
+    // Top face (+Y)
+    positions.push_back(Vector3(1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+    positions.push_back(Vector3(1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, 1.0f, 0.0f));
+
+    // Bottom face (-Y)
+    positions.push_back(Vector3(1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+    positions.push_back(Vector3(1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(0.0f, -1.0f, 0.0f));
+
+    // Right face (+X)
+    positions.push_back(Vector3(1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(1.0f, 0.0f, 0.0f));
+
+    // Left face (-X)
+    positions.push_back(Vector3(-1.0f, -1.0f, -1.0f));
+    normals.push_back(Vector3(-1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, -1.0f, 1.0f));
+    normals.push_back(Vector3(-1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, 1.0f));
+    normals.push_back(Vector3(-1.0f, 0.0f, 0.0f));
+    positions.push_back(Vector3(-1.0f, 1.0f, -1.0f));
+    normals.push_back(Vector3(-1.0f, 0.0f, 0.0f));
+
+    // Generate triangle indices (2 triangles per face = 12 triangles total)
+    for (int face = 0; face < 6; face++) {
+        int baseIdx = face * 4;
+        // Triangle 1
+        indices.push_back(baseIdx + 0);
+        indices.push_back(baseIdx + 1);
+        indices.push_back(baseIdx + 2);
+        // Triangle 2
+        indices.push_back(baseIdx + 0);
+        indices.push_back(baseIdx + 2);
+        indices.push_back(baseIdx + 3);
+    }
+}

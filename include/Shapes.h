@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <variant>
+#include <vector>
 #include "Texture.h"
 
 
@@ -13,17 +14,27 @@ public:
     Shape(Vector3 ipos = Vector3(), Vector3 isize = Vector3(), Color icol = Color());
     virtual void draw() = 0;
 
+    // Tessellate shape into vertices, normals, and triangle indices (local space)
+    virtual void tessellate(std::vector<Vector3>& positions,
+                           std::vector<Vector3>& normals,
+                           std::vector<int>& indices) const {
+        // Default implementation - empty geometry
+        positions.clear();
+        normals.clear();
+        indices.clear();
+    }
+
     void setColor(Color icolor) {color = icolor;}
     void setPosition(Vector3 ipos) {pos = ipos;}
     void setSize(Vector3 isize) {size = isize;}
     void setAxis(Vector3 iaxis, float iaxisAngle) { axis = iaxis; axisAngle = iaxisAngle; }
 
-    Color getColor() {return color;}
-    Vector3 getPosition() {return pos;}
-    Vector3 getSize() {return size;}
-    Vector3 getAxis() {return axis;}
-    Vector3 getAxisAngle() {return axisAngle;}
-    ShapeType getType() {return type;}
+    Color getColor() const {return color;}
+    Vector3 getPosition() const {return pos;}
+    Vector3 getSize() const {return size;}
+    Vector3 getAxis() const {return axis;}
+    float getAxisAngle() const {return axisAngle;}
+    ShapeType getType() const {return type;}
 protected:
     ShapeType type;
     Vector3 pos, size;
@@ -40,6 +51,9 @@ public:
     Cylinder(Vector3 ipos, float ih, float idiameter, Color icolSide, Color icolCap);
     Cylinder(Vector3 ipos, float ih, float idiameter, Vector3 iaxis, float iaxisAngle);
     void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
 
     void setSlices(int s) { slices = s;}
     void bindTexture(Texture* texture, enum PartType type);
@@ -66,6 +80,9 @@ public:
     Sphere(Vector3 ipos, float idiameter, Color icol = Color());
     Sphere(Vector3 ipos, float idiameter, Vector3 iRotationAxis, float iRotationAngle, Color icol);
     void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
 
     void setSlices(int slice, int snack) { slices = slice; stacks = snack; }
     void bindTexture(Texture* itexture) { texture = itexture; }
@@ -88,6 +105,9 @@ class Cube : public Shape {
 public:
     Cube(Vector3 ipos, Vector3 isize, Color icol = Color());
     void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
 
     void setColor(Color icolor) {color = icolor;}
     void bindTexture(Texture* itexture) {texture = itexture;}

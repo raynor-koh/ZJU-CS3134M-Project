@@ -38,6 +38,9 @@ add_executable(FirstOGL
     src/Player.cpp
     src/Enemy.cpp
     src/CollisionDetector.cpp
+    src/Lighting.cpp
+    src/GenericMesh.cpp
+    src/MeshIO.cpp
 )
 
 # 链接库

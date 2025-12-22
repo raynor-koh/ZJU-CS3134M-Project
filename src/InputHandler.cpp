@@ -1,4 +1,5 @@
 #include "InputHandler.h"
+#include "Lighting.h"
 #include <GL/glut.h>
 #include <cmath>
 #include <cstdlib>
@@ -6,7 +7,7 @@
 extern bool Active_Third_Camera; // 声明外部变量
 InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight)
     : camera(camera), camera_controller(camera_controller), scene(scene), controlledStob(controlledStob), player(player), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
-      firstMouse(true), mouseCaptured(true), mouseSensitivity(0.1f) {
+      firstMouse(true), mouseCaptured(true), mouseSensitivity(0.1f), lighting(nullptr) {
 
     for (int i = 0; i < 256; i++) {
         keys[i] = false;
@@ -35,10 +36,62 @@ void InputHandler::handleKeyPress(unsigned char key) {
             camera->jump();
         }
     }
+    // Lighting controls
+    else if (key == 'l' || key == 'L') { // Toggle lighting
+        if (lighting) {
+            lighting->toggle();
+            lighting->setEnabled(lighting->isEnabled());
+        }
+    }
+    else if (key == 'k' || key == 'K') { // Toggle point/directional light
+        if (lighting && lighting->isEnabled()) {
+            lighting->toggleLightType();
+            std::cout << "Light type: " << (lighting->isPointLight() ? "Point Light" : "Directional Light") << std::endl;
+        }
+    }
+    else if (key == '[') { // Decrease intensity
+        if (lighting && lighting->isEnabled()) {
+            lighting->adjustIntensity(-0.1f);
+        }
+    }
+    else if (key == ']') { // Increase intensity
+        if (lighting && lighting->isEnabled()) {
+            lighting->adjustIntensity(0.1f);
+        }
+    }
 }
 
 void InputHandler::handleKeyRelease(unsigned char key) {
     keys[key] = false;
+}
+
+void InputHandler::handleSpecialKey(int key, int x, int y) {
+    if (!lighting || !lighting->isEnabled()) {
+        return;  // Only process if lighting is enabled
+    }
+
+    const float moveStep = 1.0f;  // Position adjustment step
+
+    switch (key) {
+        case GLUT_KEY_LEFT:  // Move light left (-X)
+            lighting->adjustPosition(-moveStep, 0.0f, 0.0f);
+            break;
+        case GLUT_KEY_RIGHT:  // Move light right (+X)
+            lighting->adjustPosition(moveStep, 0.0f, 0.0f);
+            break;
+        case GLUT_KEY_UP:  // Move light forward (-Z in OpenGL)
+            lighting->adjustPosition(0.0f, 0.0f, -moveStep);
+            break;
+        case GLUT_KEY_DOWN:  // Move light backward (+Z)
+            lighting->adjustPosition(0.0f, 0.0f, moveStep);
+            break;
+        case GLUT_KEY_PAGE_UP:  // Move light up (+Y)
+            lighting->adjustPosition(0.0f, moveStep, 0.0f);
+            break;
+        case GLUT_KEY_PAGE_DOWN:  // Move light down (-Y)
+            lighting->adjustPosition(0.0f, -moveStep, 0.0f);
+            break;
+    }
 }
 
 void InputHandler::handleMouseClick(int button, int state, int x, int y) {

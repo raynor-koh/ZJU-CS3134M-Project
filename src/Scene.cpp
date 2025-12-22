@@ -4,11 +4,12 @@
 #include "Shapes.h"
 #include "Enemy.h"
 #include "CollisionDetector.h"
+#include "Lighting.h"
 #include <GL/glut.h>
 #include <cmath>
 
 Scene::Scene()
-    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f) {
+    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f), lighting(nullptr) {
 }
 
 Scene::~Scene() {
@@ -40,6 +41,9 @@ void Scene::initialize() {
 }
 
 void Scene::draw() const {
+    // NOTE: Lighting is applied in display() AFTER camera view is set
+    // This allows for proper headlight mode
+
     drawGround();
     drawBoundaryWalls();
 

@@ -28,6 +28,9 @@ public:
     // Check if currently recording
     bool isRecording() const { return recording; }
 
+    // Take a screenshot and save to pics/ folder
+    bool takeScreenshot();
+
 private:
     int width;
     int height;

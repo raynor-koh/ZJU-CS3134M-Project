@@ -8,6 +8,7 @@ class Target; // Forward declaration
 class Shape;
 class Enemy;
 class Texture;
+class Lighting; // Forward declaration
 
 class Scene {
 public:
@@ -38,6 +39,10 @@ public:
     const std::vector<std::shared_ptr<Shape>>& getObjects() const { return objects; }
     const std::vector<Enemy*>& getEnemies() const { return enemies; }
 
+    // Lighting system
+    void setLighting(Lighting* light) { lighting = light; }
+    Lighting* getLighting() const { return lighting; }
+
 private:
     void drawGround() const;
     void drawBoundaryWalls() const;
@@ -55,4 +60,6 @@ private:
     Color groundColor;
     float wallHeight;
     float wallThickness;
+
+    Lighting* lighting;  // Not owned by Scene, just a reference
 };

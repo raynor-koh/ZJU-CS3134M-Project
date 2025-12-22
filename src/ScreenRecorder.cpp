@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <filesystem>
+#include <cstring>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -45,7 +46,8 @@ bool ScreenRecorder::startRecording(const std::string& filename) {
     std::string outputFile = filename;
     if (outputFile.empty()) {
         auto now = std::time(nullptr);
-        auto tm = *std::localtime(&now);
+        std::tm tm;
+        localtime_s(&tm, &now);
         std::ostringstream oss;
         oss << "../../videos/gameplay_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".mp4";
         outputFile = oss.str();
@@ -128,6 +130,137 @@ void ScreenRecorder::stopRecording() {
 
     cleanup();
     recording = false;
+}
+
+bool ScreenRecorder::takeScreenshot() {
+    // Create pics directory in project root if it doesn't exist
+    // (executable runs from build/Release, so go up two levels)
+    std::filesystem::create_directories("../../pics");
+
+    // Generate filename with timestamp
+    auto now = std::time(nullptr);
+    std::tm tm;
+    localtime_s(&tm, &now);
+    std::ostringstream oss;
+    oss << "../../pics/screenshot_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".png";
+    std::string filename = oss.str();
+
+    // Allocate buffer for pixel data (RGB)
+    std::vector<uint8_t> pixels(width * height * 3);
+
+    // Read pixels from OpenGL framebuffer
+    glReadPixels(0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+
+    // Flip the image vertically (OpenGL reads bottom-to-top)
+    std::vector<uint8_t> flippedPixels(width * height * 3);
+    for (int y = 0; y < height; ++y) {
+        int srcOffset = y * width * 3;
+        int dstOffset = (height - 1 - y) * width * 3;
+        std::memcpy(&flippedPixels[dstOffset], &pixels[srcOffset], width * 3);
+    }
+
+    // Find PNG encoder
+    const AVCodec* pngCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
+    if (!pngCodec) {
+        std::cerr << "PNG codec not found" << std::endl;
+        return false;
+    }
+
+    // Allocate codec context
+    AVCodecContext* pngContext = avcodec_alloc_context3(pngCodec);
+    if (!pngContext) {
+        std::cerr << "Could not allocate PNG codec context" << std::endl;
+        return false;
+    }
+
+    // Set codec parameters
+    pngContext->width = width;
+    pngContext->height = height;
+    pngContext->pix_fmt = AV_PIX_FMT_RGB24;
+    pngContext->time_base = AVRational{1, 1};
+
+    // Open codec
+    if (avcodec_open2(pngContext, pngCodec, nullptr) < 0) {
+        std::cerr << "Could not open PNG codec" << std::endl;
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    // Allocate frame
+    AVFrame* pngFrame = av_frame_alloc();
+    if (!pngFrame) {
+        std::cerr << "Could not allocate PNG frame" << std::endl;
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    pngFrame->format = AV_PIX_FMT_RGB24;
+    pngFrame->width = width;
+    pngFrame->height = height;
+
+    if (av_frame_get_buffer(pngFrame, 0) < 0) {
+        std::cerr << "Could not allocate PNG frame buffer" << std::endl;
+        av_frame_free(&pngFrame);
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    // Copy flipped pixels to frame
+    for (int y = 0; y < height; ++y) {
+        std::memcpy(pngFrame->data[0] + y * pngFrame->linesize[0],
+                    &flippedPixels[y * width * 3], width * 3);
+    }
+
+    pngFrame->pts = 0;
+
+    // Allocate packet
+    AVPacket* pngPacket = av_packet_alloc();
+    if (!pngPacket) {
+        std::cerr << "Could not allocate PNG packet" << std::endl;
+        av_frame_free(&pngFrame);
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    // Encode frame
+    int ret = avcodec_send_frame(pngContext, pngFrame);
+    if (ret < 0) {
+        std::cerr << "Error sending frame to PNG encoder" << std::endl;
+        av_packet_free(&pngPacket);
+        av_frame_free(&pngFrame);
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    ret = avcodec_receive_packet(pngContext, pngPacket);
+    if (ret < 0) {
+        std::cerr << "Error receiving PNG packet" << std::endl;
+        av_packet_free(&pngPacket);
+        av_frame_free(&pngFrame);
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    // Write to file
+    std::ofstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to create screenshot file: " << filename << std::endl;
+        av_packet_free(&pngPacket);
+        av_frame_free(&pngFrame);
+        avcodec_free_context(&pngContext);
+        return false;
+    }
+
+    file.write(reinterpret_cast<char*>(pngPacket->data), pngPacket->size);
+    file.close();
+
+    // Cleanup
+    av_packet_free(&pngPacket);
+    av_frame_free(&pngFrame);
+    avcodec_free_context(&pngContext);
+
+    std::cout << "Screenshot saved: " << filename << std::endl;
+    return true;
 }
 
 bool ScreenRecorder::initializeEncoder(const std::string& filename) {
