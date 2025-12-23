@@ -38,6 +38,7 @@ add_executable(FirstOGL
     src/Shapes.cpp
     src/Player.cpp
     src/Enemy.cpp
+    src/EnemyManager.cpp
     src/CollisionDetector.cpp
     src/Lighting.cpp
     src/GenericMesh.cpp

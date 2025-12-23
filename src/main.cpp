@@ -16,6 +16,8 @@
 #include "Lighting.h"
 #include "MeshIO.h"
 #include "Shapes.h"
+#include "GameState.h"
+#include "EnemyManager.h"
 
 // Window dimensions
 const int WINDOW_WIDTH = 1280;
@@ -23,6 +25,9 @@ const int WINDOW_HEIGHT = 720;
 
 //全局变量控制当前摄像机
 bool Active_Third_Camera = false;            // 当前活跃的摄像机false:第一人称,true:第三人称
+
+// Game state management
+GameState gameState = GameState::PLAYING;
 
 // Global objects
 UI* gameUI = nullptr;
@@ -35,6 +40,7 @@ Player* player = nullptr;
 InputHandler* inputHandler = nullptr;
 ScreenRecorder* screenRecorder = nullptr;
 Lighting* lighting = nullptr;
+EnemyManager* enemyManager = nullptr;
 
 void initOpenGL() {
     glEnable(GL_DEPTH_TEST);
@@ -97,6 +103,142 @@ void display() {
     //stob_0->draw();
     player->draw();
     gameUI->drawCross();
+
+    // Draw Game Over overlay if dead
+    if (gameState == GameState::GAME_OVER) {
+        // Save OpenGL state
+        glPushMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        // Set up orthographic projection for 2D overlay
+        GLint viewport[4];
+        glGetIntegerv(GL_VIEWPORT, viewport);
+        glOrtho(0, viewport[2], 0, viewport[3], -1, 1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+
+        float screenW = static_cast<float>(viewport[2]);
+        float screenH = static_cast<float>(viewport[3]);
+        float centerX = screenW / 2.0f;
+        float centerY = screenH / 2.0f;
+
+        // Draw full-screen dark overlay with gradient effect
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Darker at edges, lighter at center (vignette effect)
+        glBegin(GL_QUADS);
+        // Dark overlay
+        glColor4f(0.0f, 0.0f, 0.0f, 0.7f);
+        glVertex2f(0, 0);
+        glVertex2f(screenW, 0);
+        glVertex2f(screenW, screenH);
+        glVertex2f(0, screenH);
+        glEnd();
+
+        // Central panel - larger and more prominent
+        float panelWidth = 400.0f;
+        float panelHeight = 180.0f;
+
+        // Panel shadow (offset dark rectangle)
+        glColor4f(0.0f, 0.0f, 0.0f, 0.5f);
+        glBegin(GL_QUADS);
+        glVertex2f(centerX - panelWidth/2 + 8, centerY - panelHeight/2 - 8);
+        glVertex2f(centerX + panelWidth/2 + 8, centerY - panelHeight/2 - 8);
+        glVertex2f(centerX + panelWidth/2 + 8, centerY + panelHeight/2 - 8);
+        glVertex2f(centerX - panelWidth/2 + 8, centerY + panelHeight/2 - 8);
+        glEnd();
+
+        // Main panel background (dark gray gradient)
+        glBegin(GL_QUADS);
+        glColor4f(0.15f, 0.15f, 0.18f, 0.95f);  // Top - slightly lighter
+        glVertex2f(centerX - panelWidth/2, centerY + panelHeight/2);
+        glVertex2f(centerX + panelWidth/2, centerY + panelHeight/2);
+        glColor4f(0.08f, 0.08f, 0.1f, 0.95f);   // Bottom - darker
+        glVertex2f(centerX + panelWidth/2, centerY - panelHeight/2);
+        glVertex2f(centerX - panelWidth/2, centerY - panelHeight/2);
+        glEnd();
+
+        glDisable(GL_BLEND);
+
+        // Panel border - double line effect
+        glColor3f(0.4f, 0.1f, 0.1f);  // Dark red outer
+        glLineWidth(4.0f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(centerX - panelWidth/2, centerY - panelHeight/2);
+        glVertex2f(centerX + panelWidth/2, centerY - panelHeight/2);
+        glVertex2f(centerX + panelWidth/2, centerY + panelHeight/2);
+        glVertex2f(centerX - panelWidth/2, centerY + panelHeight/2);
+        glEnd();
+
+        glColor3f(0.8f, 0.2f, 0.2f);  // Brighter red inner
+        glLineWidth(2.0f);
+        glBegin(GL_LINE_LOOP);
+        glVertex2f(centerX - panelWidth/2 + 4, centerY - panelHeight/2 + 4);
+        glVertex2f(centerX + panelWidth/2 - 4, centerY - panelHeight/2 + 4);
+        glVertex2f(centerX + panelWidth/2 - 4, centerY + panelHeight/2 - 4);
+        glVertex2f(centerX - panelWidth/2 + 4, centerY + panelHeight/2 - 4);
+        glEnd();
+        glLineWidth(1.0f);
+
+        // Decorative line under title
+        glColor3f(0.6f, 0.15f, 0.15f);
+        glLineWidth(2.0f);
+        glBegin(GL_LINES);
+        glVertex2f(centerX - 120.0f, centerY + 15.0f);
+        glVertex2f(centerX + 120.0f, centerY + 15.0f);
+        glEnd();
+        glLineWidth(1.0f);
+
+        // "GAME OVER" title - large text
+        glColor3f(0.9f, 0.2f, 0.2f);  // Bright red
+        const char* titleText = "GAME OVER";
+        // GLUT_BITMAP_TIMES_ROMAN_24 is larger
+        int titleCharWidth = 14;  // Approximate width per character
+        float titleX = centerX - (strlen(titleText) * titleCharWidth) / 2.0f;
+        glRasterPos2f(titleX, centerY + 40.0f);
+        for (const char* c = titleText; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, *c);
+        }
+
+        // "You were defeated" message
+        glColor3f(0.7f, 0.7f, 0.7f);
+        const char* defeatText = "You were defeated by the enemies";
+        int defeatCharWidth = 9;
+        float defeatX = centerX - (strlen(defeatText) * defeatCharWidth) / 2.0f;
+        glRasterPos2f(defeatX, centerY - 15.0f);
+        for (const char* c = defeatText; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+        }
+
+        // "Press ESC to exit" instruction
+        glColor3f(0.5f, 0.5f, 0.5f);
+        const char* exitText = "Press ESC to exit";
+        int exitCharWidth = 8;
+        float exitX = centerX - (strlen(exitText) * exitCharWidth) / 2.0f;
+        glRasterPos2f(exitX, centerY - 55.0f);
+        for (const char* c = exitText; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_12, *c);
+        }
+
+        // Restore OpenGL state
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_LIGHTING);
+
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+
     glutSwapBuffers();
 
     // Capture frame for screen recording if recording is active
@@ -108,12 +250,48 @@ void display() {
 void update(int value) {
     float deltaTime = 0.016f; // ~60 FPS = 16ms
 
-    inputHandler->update();
-    scene->update(deltaTime);
+    // Update game state based on free camera mode
+    if (inputHandler && inputHandler->isFreeCameraActive()) {
+        if (gameState == GameState::PLAYING) {
+            gameState = GameState::PAUSED;
+        }
+    } else {
+        if (gameState == GameState::PAUSED) {
+            gameState = GameState::PLAYING;
+        }
+    }
 
-    // Update physics (jumping, gravity)
-    camera->update(deltaTime);
-    player->update(deltaTime);
+    // Always update input handler (for camera controls)
+    inputHandler->update();
+
+    // Only update gameplay when PLAYING
+    if (gameState == GameState::PLAYING) {
+        scene->update(deltaTime);
+
+        // Update physics (jumping, gravity)
+        camera->update(deltaTime);
+        player->update(deltaTime);
+
+        // Update enemy manager (spawning, movement)
+        if (enemyManager && player) {
+            Vector3 playerPos = player->getPosition();
+            enemyManager->update(deltaTime, gameState, playerPos);
+
+            // Check for player damage from enemies
+            float damage = enemyManager->checkPlayerCollision(player, deltaTime);
+            if (damage > 0.0f) {
+                player->takeDamage(damage);
+
+                // Check for game over
+                if (!player->isAlive()) {
+                    gameState = GameState::GAME_OVER;
+                    std::cout << "\n=== GAME OVER ===\n" << std::endl;
+                    std::cout << "You were killed by enemies!" << std::endl;
+                    std::cout << "Press ESC to exit." << std::endl;
+                }
+            }
+        }
+    }
 
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // ~60 FPS
@@ -177,6 +355,7 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 }
 
 void cleanup() {
+    delete enemyManager;
     delete lighting;
     delete screenRecorder;
     delete camera_controller;
@@ -331,9 +510,22 @@ int main(int argc, char** argv) {
     free_camera = new FreeCamera(5.0f, 10.0f, 5.0f);  // Start elevated above scene
 
     player = new Player(scene);
+    // IMPORTANT: Sync player position with camera at startup to prevent position mismatch
+    player->setPosition(Vector3(camera->getX(), 0.0f, camera->getZ()));
+    player->setVisible(false);  // Hidden in first-person mode
+
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler = new InputHandler(camera, camera_controller, free_camera, scene, stob_0, player, gameUI, WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler->setLighting(lighting);
+
+    // Initialize enemy manager
+    enemyManager = new EnemyManager(scene);
+    enemyManager->setSpawnInterval(5.0f);    // Spawn every 5 seconds
+    enemyManager->setMinSpawnRadius(10.0f);  // At least 10 units from player
+    enemyManager->setMaxSpawnRadius(30.0f);  // At most 30 units from player
+    enemyManager->setMaxEnemies(6);          // Maximum 6 enemies at once
+    enemyManager->setEnemySpeed(1.5f);       // Enemies move at 1.5 units/second
+    std::cout << "Enemy system initialized: spawning every 5s, max 6 enemies" << std::endl;
 
     // Initialize screen recorder (30 FPS)
     screenRecorder = new ScreenRecorder(WINDOW_WIDTH, WINDOW_HEIGHT, 30);

@@ -12,10 +12,16 @@ void Player::init() {
     groundLevel = 0.0f;
     isOnGround = true;
     testDraw = true;
+    // Initialize health
+    maxHealth = DEFAULT_MAX_HEALTH;
+    currentHealth = maxHealth;
     return;
 }
 
 void Player::draw() {
+    // Always draw health bar (it's 2D overlay, independent of visibility)
+    drawHealthBar();
+
     if(!visible) return;
     head->draw();
     body->draw();
@@ -203,4 +209,99 @@ void Player::update(float deltaTime) {
     }
 
     updatePos();
+}
+
+// Health system implementation
+void Player::takeDamage(float damage) {
+    if (currentHealth > 0.0f) {
+        currentHealth -= damage;
+        if (currentHealth < 0.0f) {
+            currentHealth = 0.0f;
+        }
+        std::cout << "Player took " << damage << " damage! Health: " << currentHealth << "/" << maxHealth << std::endl;
+    }
+}
+
+void Player::heal(float amount) {
+    currentHealth += amount;
+    if (currentHealth > maxHealth) {
+        currentHealth = maxHealth;
+    }
+}
+
+void Player::resetHealth() {
+    currentHealth = maxHealth;
+}
+
+void Player::drawHealthBar() {
+    // Save OpenGL state
+    glPushMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    // Set up orthographic projection for 2D overlay
+    GLint viewport[4];
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glOrtho(0, viewport[2], 0, viewport[3], -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+
+    // Health bar position and size (top-left corner)
+    float barX = 20.0f;
+    float barY = viewport[3] - 40.0f;  // 40 pixels from top
+    float barWidth = 200.0f;
+    float barHeight = 20.0f;
+
+    // Draw background (dark gray)
+    glColor3f(0.3f, 0.3f, 0.3f);
+    glBegin(GL_QUADS);
+    glVertex2f(barX, barY);
+    glVertex2f(barX + barWidth, barY);
+    glVertex2f(barX + barWidth, barY + barHeight);
+    glVertex2f(barX, barY + barHeight);
+    glEnd();
+
+    // Draw health (green to red based on health)
+    float healthRatio = getHealthPercent();
+    if (healthRatio > 0.5f) {
+        glColor3f(0.0f, 1.0f, 0.0f);  // Green
+    } else if (healthRatio > 0.25f) {
+        glColor3f(1.0f, 1.0f, 0.0f);  // Yellow
+    } else {
+        glColor3f(1.0f, 0.0f, 0.0f);  // Red
+    }
+
+    glBegin(GL_QUADS);
+    glVertex2f(barX, barY);
+    glVertex2f(barX + barWidth * healthRatio, barY);
+    glVertex2f(barX + barWidth * healthRatio, barY + barHeight);
+    glVertex2f(barX, barY + barHeight);
+    glEnd();
+
+    // Draw border (black)
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glLineWidth(2.0f);
+    glBegin(GL_LINE_LOOP);
+    glVertex2f(barX, barY);
+    glVertex2f(barX + barWidth, barY);
+    glVertex2f(barX + barWidth, barY + barHeight);
+    glVertex2f(barX, barY + barHeight);
+    glEnd();
+    glLineWidth(1.0f);
+
+    // Restore OpenGL state
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LIGHTING);
+
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
 }
