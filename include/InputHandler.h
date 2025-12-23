@@ -1,6 +1,7 @@
 #pragma once
 #include "Camera.h"
 #include "camera_controller.h"
+#include "FreeCamera.h"
 #include "Stob.h"
 #include "UI.h"
 #include "Player.h"
@@ -10,12 +11,13 @@ class Lighting; // Forward declaration
 
 class InputHandler {
 public:
-    InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight);
+    InputHandler(Camera* camera, CameraController* camera_controller, FreeCamera* free_camera, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight);
     // 按键按下的处理
     void handleKeyPress(unsigned char key);
     void handleKeyRelease(unsigned char key);
     void handleSpecialKey(int key, int x, int y);  // For arrow keys, PageUp/PageDown
     void handleMouseClick(int button, int state, int x, int y);
+    void handleMouseWheel(int button, int state, int x, int y);
 
     // 鼠标移动的处理
     void handleMouseMotion(int x, int y);
@@ -28,6 +30,10 @@ public:
     bool isMouseCaptured() const { return mouseCaptured; }
     void toggleCamera();//改变摄像机：第三人称/第一人称
 
+    // Free Camera / Spectator mode
+    void toggleFreeCamera();
+    bool isFreeCameraActive() const { return freeCameraActive; }
+
     // Lighting control
     void setLighting(Lighting* light) { lighting = light; }
 
@@ -37,6 +43,7 @@ private:
     float mouseX, mouseY; // 当前鼠标位置（窗口坐标）
     Camera* camera = nullptr;                  // 第一人称摄像机
     CameraController* camera_controller = nullptr;  // 第三人称摄像机
+    FreeCamera* free_camera = nullptr;         // 自由摄像机 (Spectator mode)
     Scene* scene = nullptr;
     Stob* controlledStob = nullptr;        // 被控制的角色对象
     Player* player = nullptr;
@@ -47,6 +54,12 @@ private:
     bool firstMouse;
     bool mouseCaptured;
     float mouseSensitivity;
+
+    // Free camera mode state
+    bool freeCameraActive;
+    bool isOrbitDragging;
+    bool isPanDragging;
+    int dragStartX, dragStartY;
 
     Lighting* lighting;  // Not owned by InputHandler, just a reference
 };

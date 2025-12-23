@@ -48,6 +48,9 @@ public:
     void setLighting(Lighting* light) { lighting = light; }
     Lighting* getLighting() const { return lighting; }
 
+    // Scene bounds calculation for camera zoom-to-fit
+    void calculateSceneBounds(Vector3& center, float& radius) const;
+
 private:
     void drawGround() const;
     void drawBoundaryWalls() const;

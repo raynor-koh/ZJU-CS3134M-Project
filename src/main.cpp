@@ -9,6 +9,7 @@
 #include "Scene.h"
 #include "InputHandler.h"
 #include "camera_controller.h"
+#include "FreeCamera.h"
 #include "ScreenRecorder.h"
 #include "Target.h"
 #include "Bullet.h"
@@ -27,6 +28,7 @@ bool Active_Third_Camera = false;            // 当前活跃的摄像机false:�
 UI* gameUI = nullptr;
 Camera* camera = nullptr;
 CameraController* camera_controller = nullptr;
+FreeCamera* free_camera = nullptr;
 Scene* scene = nullptr;
 Stob* stob_0 = nullptr;
 Player* player = nullptr;
@@ -57,7 +59,11 @@ void display() {
     glLoadIdentity();
 
     // Apply camera view
-    if(Active_Third_Camera == false) {
+    if(inputHandler && inputHandler->isFreeCameraActive()) {
+        // Free Camera / Spectator mode
+        free_camera->applyView();
+    }
+    else if(Active_Third_Camera == false) {
         camera->applyView();
     }
     else {
@@ -155,13 +161,26 @@ void reshape(int width, int height) {
 }
 
 void mouse(int button, int state, int x, int y) {
-    inputHandler->handleMouseClick(button, state, x, y);
+    // Mouse wheel events (buttons 3 and 4) - legacy GLUT
+    if (button == 3 || button == 4) {
+        inputHandler->handleMouseWheel(button, state, x, y);
+    } else {
+        inputHandler->handleMouseClick(button, state, x, y);
+    }
+}
+
+void mouseWheel(int wheel, int direction, int x, int y) {
+    // Freeglut mouse wheel callback
+    // direction > 0 = scroll up (zoom in), direction < 0 = scroll down (zoom out)
+    int button = (direction > 0) ? 3 : 4;  // Convert to legacy button numbers
+    inputHandler->handleMouseWheel(button, GLUT_DOWN, x, y);
 }
 
 void cleanup() {
     delete lighting;
     delete screenRecorder;
     delete camera_controller;
+    delete free_camera;
     delete camera;
     delete scene;
     delete stob_0;
@@ -308,9 +327,12 @@ int main(int argc, char** argv) {
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     camera_controller->setPlayerPosition(5.0f, 5.0f);  // Sync with Stob's starting position
 
+    // Create Free Camera / Spectator mode camera
+    free_camera = new FreeCamera(5.0f, 10.0f, 5.0f);  // Start elevated above scene
+
     player = new Player(scene);
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
-    inputHandler = new InputHandler(camera, camera_controller, scene, stob_0, player, gameUI, WINDOW_WIDTH, WINDOW_HEIGHT);
+    inputHandler = new InputHandler(camera, camera_controller, free_camera, scene, stob_0, player, gameUI, WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler->setLighting(lighting);
 
     // Initialize screen recorder (30 FPS)
@@ -326,8 +348,18 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboard);
     glutKeyboardUpFunc(keyboardUp);
     glutSpecialFunc(specialKey);  // For arrow keys and PageUp/PageDown
-    glutPassiveMotionFunc(mouseMotion);
+    glutPassiveMotionFunc(mouseMotion);  // Mouse movement without buttons
+    glutMotionFunc(mouseMotion);         // Mouse movement WITH buttons (for dragging)
     glutMouseFunc(mouse);
+
+    // Try to register mouse wheel callback (only available in freeglut 2.4+)
+    #ifdef GLUT_WHEEL_UP
+    glutMouseWheelFunc(mouseWheel);
+    std::cout << "Mouse wheel callback registered (freeglut)" << std::endl;
+    #else
+    std::cout << "Mouse wheel via buttons 3/4 (legacy GLUT)" << std::endl;
+    #endif
+
     glutTimerFunc(0, update, 0);
 
     // Print controls
@@ -340,6 +372,13 @@ int main(int argc, char** argv) {
     std::cout << "  Tab - Toggle mouse capture (free cursor for other windows)" << std::endl;
     std::cout << "  R - Start/Stop screen recording (saves to project root videos/ folder)" << std::endl;
     std::cout << "  P - Take screenshot (saves PNG to project root pics/ folder)" << std::endl;
+    std::cout << std::endl;
+    std::cout << "Free Camera / Spectator Mode (Photo Mode):" << std::endl;
+    std::cout << "  V - Toggle Free Camera ON/OFF (freezes player, shows cursor)" << std::endl;
+    std::cout << "  Alt + Left Mouse Drag - Orbit camera around scene" << std::endl;
+    std::cout << "  Alt + Right Mouse Drag - Pan camera (move sideways/up/down)" << std::endl;
+    std::cout << "  Mouse Wheel OR +/- Keys - Zoom in/out" << std::endl;
+    std::cout << "  F - Zoom to Fit (frame entire scene in view)" << std::endl;
     std::cout << std::endl;
     std::cout << "Lighting Controls (Advanced - lighting is ON by default):" << std::endl;
     std::cout << "  L - Toggle lighting on/off" << std::endl;

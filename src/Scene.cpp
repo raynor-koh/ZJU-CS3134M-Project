@@ -412,3 +412,118 @@ void Scene::clearBullets() {
     }
     bullets.clear();
 }
+
+// Calculate scene bounding sphere for camera zoom-to-fit
+void Scene::calculateSceneBounds(Vector3& center, float& radius) const {
+    // Initialize AABB to invalid range
+    // Using minBounds/maxBounds to avoid Windows min/max macro conflicts
+    Vector3 minBounds(1000000.0f, 1000000.0f, 1000000.0f);
+    Vector3 maxBounds(-1000000.0f, -1000000.0f, -1000000.0f);
+
+    bool foundAnyObject = false;
+
+    // Include all Shape objects (cubes, spheres, cylinders, etc.)
+    for (const auto& obj : objects) {
+        Vector3 objPos = obj->getPosition();
+        Vector3 objSize = obj->getSize();
+
+        // Compute AABB of this object (assuming size is full extent, not half)
+        Vector3 objMin(objPos.x - objSize.x / 2.0f, objPos.y - objSize.y / 2.0f, objPos.z - objSize.z / 2.0f);
+        Vector3 objMax(objPos.x + objSize.x / 2.0f, objPos.y + objSize.y / 2.0f, objPos.z + objSize.z / 2.0f);
+
+        // Expand scene AABB
+        minBounds.x = (minBounds.x < objMin.x) ? minBounds.x : objMin.x;
+        minBounds.y = (minBounds.y < objMin.y) ? minBounds.y : objMin.y;
+        minBounds.z = (minBounds.z < objMin.z) ? minBounds.z : objMin.z;
+
+        maxBounds.x = (maxBounds.x > objMax.x) ? maxBounds.x : objMax.x;
+        maxBounds.y = (maxBounds.y > objMax.y) ? maxBounds.y : objMax.y;
+        maxBounds.z = (maxBounds.z > objMax.z) ? maxBounds.z : objMax.z;
+
+        foundAnyObject = true;
+    }
+
+    // Include enemies (use body and head shapes for bounds)
+    for (const auto& enemy : enemies) {
+        // Get bounds from body shape
+        Shape* bodyShape = enemy->getBodyShape();
+        if (bodyShape) {
+            Vector3 bodyPos = bodyShape->getPosition();
+            Vector3 bodySize = bodyShape->getSize();
+
+            Vector3 objMin(bodyPos.x - bodySize.x / 2.0f, bodyPos.y - bodySize.y / 2.0f, bodyPos.z - bodySize.z / 2.0f);
+            Vector3 objMax(bodyPos.x + bodySize.x / 2.0f, bodyPos.y + bodySize.y / 2.0f, bodyPos.z + bodySize.z / 2.0f);
+
+            minBounds.x = (minBounds.x < objMin.x) ? minBounds.x : objMin.x;
+            minBounds.y = (minBounds.y < objMin.y) ? minBounds.y : objMin.y;
+            minBounds.z = (minBounds.z < objMin.z) ? minBounds.z : objMin.z;
+
+            maxBounds.x = (maxBounds.x > objMax.x) ? maxBounds.x : objMax.x;
+            maxBounds.y = (maxBounds.y > objMax.y) ? maxBounds.y : objMax.y;
+            maxBounds.z = (maxBounds.z > objMax.z) ? maxBounds.z : objMax.z;
+
+            foundAnyObject = true;
+        }
+
+        // Get bounds from head shape
+        Shape* headShape = enemy->getHeadShape();
+        if (headShape) {
+            Vector3 headPos = headShape->getPosition();
+            Vector3 headSize = headShape->getSize();
+
+            Vector3 objMin(headPos.x - headSize.x / 2.0f, headPos.y - headSize.y / 2.0f, headPos.z - headSize.z / 2.0f);
+            Vector3 objMax(headPos.x + headSize.x / 2.0f, headPos.y + headSize.y / 2.0f, headPos.z + headSize.z / 2.0f);
+
+            minBounds.x = (minBounds.x < objMin.x) ? minBounds.x : objMin.x;
+            minBounds.y = (minBounds.y < objMin.y) ? minBounds.y : objMin.y;
+            minBounds.z = (minBounds.z < objMin.z) ? minBounds.z : objMin.z;
+
+            maxBounds.x = (maxBounds.x > objMax.x) ? maxBounds.x : objMax.x;
+            maxBounds.y = (maxBounds.y > objMax.y) ? maxBounds.y : objMax.y;
+            maxBounds.z = (maxBounds.z > objMax.z) ? maxBounds.z : objMax.z;
+
+            foundAnyObject = true;
+        }
+    }
+
+    // Include targets
+    for (const auto& target : targets) {
+        Vector3 targetPos = target->getPosition();
+        Vector3 targetSize = target->getSize();
+
+        Vector3 objMin(targetPos.x - targetSize.x / 2.0f, targetPos.y - targetSize.y / 2.0f, targetPos.z - targetSize.z / 2.0f);
+        Vector3 objMax(targetPos.x + targetSize.x / 2.0f, targetPos.y + targetSize.y / 2.0f, targetPos.z + targetSize.z / 2.0f);
+
+        minBounds.x = (minBounds.x < objMin.x) ? minBounds.x : objMin.x;
+        minBounds.y = (minBounds.y < objMin.y) ? minBounds.y : objMin.y;
+        minBounds.z = (minBounds.z < objMin.z) ? minBounds.z : objMin.z;
+
+        maxBounds.x = (maxBounds.x > objMax.x) ? maxBounds.x : objMax.x;
+        maxBounds.y = (maxBounds.y > objMax.y) ? maxBounds.y : objMax.y;
+        maxBounds.z = (maxBounds.z > objMax.z) ? maxBounds.z : objMax.z;
+
+        foundAnyObject = true;
+    }
+
+    // If no objects found, use default scene bounds (ground plane)
+    if (!foundAnyObject) {
+        minBounds = Vector3(-groundSize, 0.0f, -groundSize);
+        maxBounds = Vector3(groundSize, wallHeight, groundSize);
+    }
+
+    // Calculate center of AABB
+    center.x = (minBounds.x + maxBounds.x) / 2.0f;
+    center.y = (minBounds.y + maxBounds.y) / 2.0f;
+    center.z = (minBounds.z + maxBounds.z) / 2.0f;
+
+    // Calculate radius as half the diagonal of AABB
+    float dx = maxBounds.x - minBounds.x;
+    float dy = maxBounds.y - minBounds.y;
+    float dz = maxBounds.z - minBounds.z;
+    radius = sqrt(dx * dx + dy * dy + dz * dz) / 2.0f;
+
+    // Ensure minimum radius
+    if (radius < 1.0f) {
+        radius = 10.0f; // Default scene radius if very small
+    }
+}

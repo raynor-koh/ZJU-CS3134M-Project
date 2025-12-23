@@ -6,9 +6,10 @@
 #include <iostream>
 
 extern bool Active_Third_Camera; // 声明外部变量
-InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight)
-    : camera(camera), camera_controller(camera_controller), scene(scene), controlledStob(controlledStob), player(player), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
-      firstMouse(true), mouseCaptured(true), mouseSensitivity(0.1f), lighting(nullptr) {
+InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, FreeCamera* free_camera, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight)
+    : camera(camera), camera_controller(camera_controller), free_camera(free_camera), scene(scene), controlledStob(controlledStob), player(player), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
+      firstMouse(true), mouseCaptured(true), mouseSensitivity(0.1f), lighting(nullptr),
+      freeCameraActive(false), isOrbitDragging(false), isPanDragging(false), dragStartX(0), dragStartY(0) {
 
     for (int i = 0; i < 256; i++) {
         keys[i] = false;
@@ -60,6 +61,36 @@ void InputHandler::handleKeyPress(unsigned char key) {
             lighting->adjustIntensity(0.1f);
         }
     }
+    // Free Camera mode controls
+    else if (key == 'v' || key == 'V') { // Toggle Free Camera / Spectator mode
+        toggleFreeCamera();
+    }
+    else if (key == 'f' || key == 'F') { // Zoom to fit (only in free camera mode)
+        if (freeCameraActive && free_camera && scene) {
+            Vector3 sceneCenter;
+            float sceneRadius;
+            scene->calculateSceneBounds(sceneCenter, sceneRadius);
+            free_camera->zoomToFit(sceneCenter, sceneRadius);
+            std::cout << "Zoom to Fit: center(" << sceneCenter.x << ", " << sceneCenter.y << ", " << sceneCenter.z
+                     << "), radius=" << sceneRadius << std::endl;
+            glutPostRedisplay();
+        }
+    }
+    // Keyboard zoom controls (fallback for legacy GLUT without mouse wheel)
+    else if (key == '+' || key == '=') { // Zoom in
+        if (freeCameraActive && free_camera) {
+            free_camera->zoom(2.0f);
+            std::cout << "Free Camera: Zoom In (keyboard)" << std::endl;
+            glutPostRedisplay();
+        }
+    }
+    else if (key == '-' || key == '_') { // Zoom out
+        if (freeCameraActive && free_camera) {
+            free_camera->zoom(-2.0f);
+            std::cout << "Free Camera: Zoom Out (keyboard)" << std::endl;
+            glutPostRedisplay();
+        }
+    }
 }
 
 void InputHandler::handleKeyRelease(unsigned char key) {
@@ -96,6 +127,43 @@ void InputHandler::handleSpecialKey(int key, int x, int y) {
 }
 
 void InputHandler::handleMouseClick(int button, int state, int x, int y) {
+    // Free Camera mode: Alt+drag for orbit/pan
+    if (freeCameraActive) {
+        int modifiers = glutGetModifiers();
+        bool altPressed = (modifiers & GLUT_ACTIVE_ALT) != 0;
+
+        std::cout << "Free Camera Click: button=" << button << ", state=" << state
+                  << ", altPressed=" << altPressed << std::endl;
+
+        if (altPressed) {
+            if (button == GLUT_LEFT_BUTTON) {
+                if (state == GLUT_DOWN) {
+                    std::cout << "Starting orbit drag" << std::endl;
+                    isOrbitDragging = true;
+                    isPanDragging = false;
+                    dragStartX = x;
+                    dragStartY = y;
+                } else if (state == GLUT_UP) {
+                    std::cout << "Stopping orbit drag" << std::endl;
+                    isOrbitDragging = false;
+                }
+            } else if (button == GLUT_RIGHT_BUTTON) {
+                if (state == GLUT_DOWN) {
+                    std::cout << "Starting pan drag" << std::endl;
+                    isPanDragging = true;
+                    isOrbitDragging = false;
+                    dragStartX = x;
+                    dragStartY = y;
+                } else if (state == GLUT_UP) {
+                    std::cout << "Stopping pan drag" << std::endl;
+                    isPanDragging = false;
+                }
+            }
+        }
+        return; // In free camera mode, don't fire bullets
+    }
+
+    // Normal gameplay: shooting
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         Vector3 position, direction;
 
@@ -114,6 +182,34 @@ void InputHandler::handleMouseClick(int button, int state, int x, int y) {
 }
 
 void InputHandler::handleMouseMotion(int x, int y) {
+    // Free Camera mode: handle orbit/pan dragging
+    if (freeCameraActive) {
+        if (isOrbitDragging && free_camera) {
+            float deltaX = x - dragStartX;
+            float deltaY = y - dragStartY;
+
+            // Orbit camera around target
+            float orbitSpeed = 0.005f;
+            free_camera->orbit(-deltaX * orbitSpeed, -deltaY * orbitSpeed);
+
+            dragStartX = x;
+            dragStartY = y;
+            glutPostRedisplay();
+        } else if (isPanDragging && free_camera) {
+            float deltaX = x - dragStartX;
+            float deltaY = y - dragStartY;
+
+            // Pan camera (move target point)
+            float panSpeed = 0.02f;
+            free_camera->pan(-deltaX * panSpeed, deltaY * panSpeed);
+
+            dragStartX = x;
+            dragStartY = y;
+            glutPostRedisplay();
+        }
+        return; // In free camera mode, skip normal mouse handling
+    }
+
     if (!mouseCaptured) {
         return; // Don't process mouse movement when not captured
     }
@@ -269,4 +365,67 @@ void InputHandler::toggleCamera() {
     }
 
     Active_Third_Camera = !Active_Third_Camera;
+}
+
+void InputHandler::handleMouseWheel(int button, int state, int x, int y) {
+    std::cout << "Mouse wheel event: button=" << button << ", state=" << state << ", freeCameraActive=" << freeCameraActive << std::endl;
+
+    if (!freeCameraActive || !free_camera) {
+        return; // Only handle mouse wheel in free camera mode
+    }
+
+    // GLUT mouse wheel: button 3 = scroll up, button 4 = scroll down
+    if (button == 3) { // Scroll up - zoom in
+        std::cout << "Zooming in..." << std::endl;
+        free_camera->zoom(2.0f);
+        glutPostRedisplay();
+    } else if (button == 4) { // Scroll down - zoom out
+        std::cout << "Zooming out..." << std::endl;
+        free_camera->zoom(-2.0f);
+        glutPostRedisplay();
+    }
+}
+
+void InputHandler::toggleFreeCamera() {
+    freeCameraActive = !freeCameraActive;
+
+    if (freeCameraActive) {
+        std::cout << "FREE CAMERA ON - Press V to exit, F to zoom-to-fit, Alt+Drag to orbit/pan, Mouse Wheel to zoom" << std::endl;
+
+        // Initialize free camera position from current active camera
+        if (Active_Third_Camera) {
+            // Third-person camera: positioned above player
+            float playerX, playerY, playerRotation;
+            camera_controller->getPlayerPosition(&playerX, &playerY, &playerRotation);
+            free_camera->setPosition(playerX, 10.0f, playerY);  // Camera is at fixed height above player
+        } else {
+            // First-person camera: use camera's position directly
+            free_camera->setPosition(camera->getX(), camera->getY(), camera->getZ());
+        }
+
+        // Set orbit target to scene center
+        Vector3 sceneCenter;
+        float sceneRadius;
+        scene->calculateSceneBounds(sceneCenter, sceneRadius);
+        free_camera->setOrbitTarget(sceneCenter);
+
+        // Show cursor
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+        mouseCaptured = false;
+
+    } else {
+        std::cout << "FREE CAMERA OFF - Returning to normal camera" << std::endl;
+
+        // Restore cursor capture if needed
+        if (!mouseCaptured) {
+            mouseCaptured = true;
+            glutSetCursor(GLUT_CURSOR_NONE);
+            glutWarpPointer(windowWidth / 2, windowHeight / 2);
+            firstMouse = true;
+        }
+
+        // Reset drag states
+        isOrbitDragging = false;
+        isPanDragging = false;
+    }
 }

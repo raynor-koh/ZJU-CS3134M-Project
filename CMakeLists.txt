@@ -30,6 +30,7 @@ add_executable(FirstOGL
     src/Stob.cpp
     src/Texture.cpp
     src/camera_controller.cpp
+    src/FreeCamera.cpp
     src/UI.cpp
     src/ScreenRecorder.cpp
     src/Target.cpp
