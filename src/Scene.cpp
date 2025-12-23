@@ -29,15 +29,15 @@ void Scene::initialize() {
     // addGameObject(new GameObject(Vector3(3.0f, 2.0f, 8.0f), Vector3(4.0f, 4.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
     addTexture(new Texture("resources/textures/WoodCap.bmp"));
     addEnemy(new Enemy(Vector3(-5.0f, 0.0f, -5.0f), Color(0.7f, 1.0f, 0.3f), Color(0.1f, 0.3f, 0.5f)));
-    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.0f, 3.0f), 1.0f, 1.0f, Color(0.1f, 1.0f, 1.0f)));
-    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 5.0f), 1.0f, 1.0f, Color(0.4f, 0.1f, 0.9f)));
-    addShape(std::make_shared<Sphere>(Vector3(5.0f, 0.8f, 4.2f), 0.4f, Color(0.8f, 0.2f, 0.6f)));
-    addShape(std::make_shared<Cube>(Vector3(0.0f, 1.0f, 0.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
-    addShape(std::make_shared<Cube>(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));
-    addShape(std::make_shared<Cube>(Vector3(-4.0f, 1.5f, 2.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));
-    addShape(std::make_shared<Cube>(Vector3(10.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
-    addShape(std::make_shared<Cube>(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
-    addShape(std::make_shared<Cube>(Vector3(3.0f, 2.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 3.0f), 1.0f, 1.0f, Color(0.1f, 1.0f, 1.0f)));  // Y = height/2 = 0.5
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 5.0f), 1.0f, 1.0f, Color(0.4f, 0.1f, 0.9f)));  // Already correct
+    addShape(std::make_shared<Sphere>(Vector3(5.0f, 0.2f, 4.2f), 0.4f, Color(0.8f, 0.2f, 0.6f)));  // Y = diameter/2 = 0.2
+    addShape(std::make_shared<Cube>(Vector3(0.0f, 0.5f, 0.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));  // Y = size.y/2 = 0.5
+    addShape(std::make_shared<Cube>(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));  // Already correct
+    addShape(std::make_shared<Cube>(Vector3(-4.0f, 1.5f, 2.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));  // Already correct
+    addShape(std::make_shared<Cube>(Vector3(10.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));  // Already correct
+    addShape(std::make_shared<Cube>(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));  // Already correct
+    addShape(std::make_shared<Cube>(Vector3(3.0f, 4.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));  // Y = size.y/2 = 4.0
 }
 
 void Scene::draw() const {
@@ -146,9 +146,99 @@ void Scene::drawBoundaryWalls() const {
     glPopMatrix();
 }
 
-// Check collision with all objects and boundary walls
+// Get the highest ground level at a given XZ position (for landing on boxes)
+float Scene::getGroundHeightAt(float x, float z, float radius, float currentY) const {
+    float highestGround = 0.0f; // Start with ground level
+    const float SKIN_WIDTH = 0.01f; // Small epsilon for stable landing
+
+    // Check all shapes to find the highest one the player can land on
+    for (const auto& shape : objects) {
+        if (!shape) continue;
+
+        Vector3 shapePos = shape->getPosition();
+        Vector3 shapeSize = shape->getSize();
+
+        // Calculate AABB of the shape
+        float boxMinX = shapePos.x - shapeSize.x / 2.0f;
+        float boxMaxX = shapePos.x + shapeSize.x / 2.0f;
+        float boxMinZ = shapePos.z - shapeSize.z / 2.0f;
+        float boxMaxZ = shapePos.z + shapeSize.z / 2.0f;
+        float boxMaxY = shapePos.y + shapeSize.y / 2.0f;
+        float boxMinY = shapePos.y - shapeSize.y / 2.0f;
+
+        // Check if player's XZ position overlaps with this box (with radius)
+        float closestX = (x < boxMinX) ? boxMinX : (x > boxMaxX) ? boxMaxX : x;
+        float closestZ = (z < boxMinZ) ? boxMinZ : (z > boxMaxZ) ? boxMaxZ : z;
+
+        float distX = x - closestX;
+        float distZ = z - closestZ;
+        float distanceSquared = distX * distX + distZ * distZ;
+
+        // If player is above this box and overlaps in XZ
+        if (distanceSquared <= (radius * radius) && currentY >= boxMinY) {
+            // This box's top surface is a potential landing spot
+            if (boxMaxY > highestGround && boxMaxY <= currentY + SKIN_WIDTH) {
+                highestGround = boxMaxY;
+            }
+        }
+    }
+
+    return highestGround;
+}
+
+// Check vertical collision - returns true if landing on something, sets outGroundY
+bool Scene::checkVerticalCollision(float x, float y, float z, float radius, float height, float& outGroundY) const {
+    const float SKIN_WIDTH = 0.01f;
+    float playerBottom = y;
+    float playerTop = y + height;
+
+    outGroundY = 0.0f; // Default ground level
+    bool foundGround = false;
+
+    // Check all shapes for vertical collision
+    for (const auto& shape : objects) {
+        if (!shape) continue;
+
+        Vector3 shapePos = shape->getPosition();
+        Vector3 shapeSize = shape->getSize();
+
+        // Calculate AABB of the shape
+        float boxMinX = shapePos.x - shapeSize.x / 2.0f;
+        float boxMaxX = shapePos.x + shapeSize.x / 2.0f;
+        float boxMinZ = shapePos.z - shapeSize.z / 2.0f;
+        float boxMaxZ = shapePos.z + shapeSize.z / 2.0f;
+        float boxMaxY = shapePos.y + shapeSize.y / 2.0f;
+        float boxMinY = shapePos.y - shapeSize.y / 2.0f;
+
+        // Check horizontal overlap first (player XZ vs box XZ)
+        float closestX = (x < boxMinX) ? boxMinX : (x > boxMaxX) ? boxMaxX : x;
+        float closestZ = (z < boxMinZ) ? boxMinZ : (z > boxMaxZ) ? boxMaxZ : z;
+
+        float distX = x - closestX;
+        float distZ = z - closestZ;
+        float distanceSquared = distX * distX + distZ * distZ;
+
+        // If player overlaps horizontally with this box
+        if (distanceSquared <= (radius * radius)) {
+            // Check if landing on top
+            if (playerBottom <= boxMaxY + SKIN_WIDTH && playerBottom >= boxMinY) {
+                if (boxMaxY > outGroundY) {
+                    outGroundY = boxMaxY;
+                    foundGround = true;
+                }
+            }
+            // Check if hitting ceiling
+            else if (playerTop >= boxMinY && playerTop <= boxMaxY + SKIN_WIDTH) {
+                // Hitting bottom of box while jumping up - not handled here, just note overlap
+            }
+        }
+    }
+
+    return foundGround;
+}
+
+// Check collision with all objects and boundary walls (horizontal XZ collision only)
 bool Scene::checkCollision(float x, float z, float radius) const {
-    return false;
     // Check boundary walls collision (simplified - treat as rectangle boundary)
     float boundaryMin = -groundSize + radius;
     float boundaryMax = groundSize - radius;
@@ -161,6 +251,74 @@ bool Scene::checkCollision(float x, float z, float radius) const {
     for (const auto& obj : gameObjects) {
         if (obj->checkAABBCollision(x, z, radius)) {
             return true; // Collision with object
+        }
+    }
+
+    // NOTE: Shape collision checking removed from 2D version
+    // Use the Y-aware checkCollision(x, y, z, radius, height) instead
+    // This ensures proper collision detection when standing on boxes
+
+    return false; // No collision
+}
+
+// Y-aware collision detection - checks if player at given height would collide with boxes
+bool Scene::checkCollision(float x, float y, float z, float radius, float height) const {
+    const float MARGIN = 0.1f; // Small margin to allow walking off edges
+
+    // Check boundary walls collision
+    float boundaryMin = -groundSize + radius;
+    float boundaryMax = groundSize - radius;
+
+    if (x < boundaryMin || x > boundaryMax || z < boundaryMin || z > boundaryMax) {
+        return true; // Collision with boundary walls
+    }
+
+    // Check collision with all game objects (these use old 2D collision)
+    for (const auto& obj : gameObjects) {
+        if (obj->checkAABBCollision(x, z, radius)) {
+            return true; // Collision with object
+        }
+    }
+
+    // Check collision with shape objects - Y-aware
+    for (const auto& shape : objects) {
+        if (!shape) continue;
+
+        Vector3 shapePos = shape->getPosition();
+        Vector3 shapeSize = shape->getSize();
+
+        // Calculate box bounds
+        float boxMinX = shapePos.x - shapeSize.x / 2.0f;
+        float boxMaxX = shapePos.x + shapeSize.x / 2.0f;
+        float boxMinZ = shapePos.z - shapeSize.z / 2.0f;
+        float boxMaxZ = shapePos.z + shapeSize.z / 2.0f;
+        float boxMinY = shapePos.y - shapeSize.y / 2.0f;
+        float boxMaxY = shapePos.y + shapeSize.y / 2.0f;
+
+        // Player bounds
+        float playerBottom = y;
+        float playerTop = y + height;
+
+        // CRITICAL: If player's feet are AT or ABOVE the box top, they're standing on it
+        // Allow movement (no horizontal collision with this box)
+        if (playerBottom >= boxMaxY - MARGIN) {
+            continue; // Standing on top of box or above it, allow movement
+        }
+
+        // Player is below box top - check if they're actually inside the box vertically
+        if (playerTop > boxMinY) {
+            // Player vertically intersects with box, check XZ collision
+            // Find closest point on box to player position in XZ plane
+            float closestX = (x < boxMinX) ? boxMinX : (x > boxMaxX) ? boxMaxX : x;
+            float closestZ = (z < boxMinZ) ? boxMinZ : (z > boxMaxZ) ? boxMaxZ : z;
+
+            float distX = x - closestX;
+            float distZ = z - closestZ;
+            float distanceSquared = distX * distX + distZ * distZ;
+
+            if (distanceSquared <= (radius * radius)) {
+                return true; // Collision with shape sides
+            }
         }
     }
 
@@ -182,6 +340,36 @@ void Scene::update(float deltaTime) {
 void Scene::checkBulletCollisions() {
     for (auto& bullet : bullets) {
         if(!bullet->isActive()) continue;
+
+        Vector3 bulletPos = bullet->getPosition();
+
+        // Check wall collisions
+        if (bulletPos.x < -groundSize || bulletPos.x > groundSize ||
+            bulletPos.z < -groundSize || bulletPos.z > groundSize ||
+            bulletPos.y < 0.0f || bulletPos.y > wallHeight) {
+            bullet->deactivate();
+            continue;
+        }
+
+        // Check Target collisions
+        for (auto& target : targets) {
+            if (!target->isAlive()) continue;
+            if (target->checkAABBCollision(bulletPos.x, bulletPos.z, 0.1f)) {
+                // Check Y coordinate (height) as well
+                Vector3 targetPos = target->getPosition();
+                Vector3 targetSize = target->getSize();
+                if (bulletPos.y >= targetPos.y - targetSize.y &&
+                    bulletPos.y <= targetPos.y + targetSize.y) {
+                    bullet->deactivate();
+                    target->takeDamage(bullet->getDamage());
+                    break;
+                }
+            }
+        }
+
+        if(!bullet->isActive()) continue;
+
+        // Check Enemy collisions
         for (auto& enemy : enemies) {
             if (CollisionDetector::checkCollision(bullet->getShape(), enemy->getHeadShape()) ||
                 CollisionDetector::checkCollision(bullet->getShape(), enemy->getBodyShape())) {
@@ -194,6 +382,10 @@ void Scene::checkBulletCollisions() {
                 break;
             }
         }
+
+        if(!bullet->isActive()) continue;
+
+        // Check Shape collisions (cubes, spheres, cylinders)
         for (auto& obj : objects) {
             if (CollisionDetector::checkCollision(bullet->getShape(), obj.get())) {
                 bullet->deactivate();

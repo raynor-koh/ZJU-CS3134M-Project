@@ -125,16 +125,13 @@ bool Player::checkCollision(const std::vector<Enemy*>& enemies) {
 
 bool Player::checkSceneCollision() {
     if (!scene) return false;
-    float groundSize = scene->getGroundSize();
-    float radius = max(body->getSize().x/2.0f, head->getRadius());
-    float boundaryMin = -groundSize + radius;
-    float boundaryMax = groundSize - radius;
 
-    if (position.x < boundaryMin || position.x > boundaryMax || position.z < boundaryMin || position.z > boundaryMax) {
-        return true; // Collision with boundary walls
-    }
+    const float PLAYER_HEIGHT = 1.4f; // Match the height used in update()
+    const float PLAYER_RADIUS = 0.35f; // Match the radius used in update()
 
-    return checkCollision(scene->getObjects()) || checkCollision(scene->getEnemies());
+    // Use the Y-aware collision check from Scene
+    // This properly handles standing on top of boxes vs colliding with sides
+    return scene->checkCollision(position.x, position.y, position.z, PLAYER_RADIUS, PLAYER_HEIGHT);
 }
 
 void Player::jump() {
@@ -145,21 +142,65 @@ void Player::jump() {
 }
 
 void Player::update(float deltaTime) {
+    const float SKIN_WIDTH = 0.01f; // Small epsilon for stable landing
+    const float PLAYER_HEIGHT = 1.4f; // Player total height (body + head)
+    const float PLAYER_RADIUS = 0.35f; // Player collision radius
+
     // Apply gravity
     if (!isOnGround) {
         verticalVelocity -= GRAVITY * deltaTime;
     }
 
-    // Update Y position based on vertical velocity
+    // Store old position
+    float oldY = position.y;
+
+    // Update Y position based on vertical velocity (axis-separated: Y first)
     position.y += verticalVelocity * deltaTime;
 
-    // Ground collision
-    if (position.y <= groundLevel) {
-        position.y = groundLevel;
-        verticalVelocity = 0.0f;
-        isOnGround = true;
-    } else {
-        isOnGround = false;
+    // Check for vertical collision with scene objects
+    float groundY = 0.0f; // Default ground level
+    bool foundGround = false;
+
+    if (scene) {
+        // Player position is at feet level, check vertical collision
+        float playerBottom = position.y;
+
+        // Check vertical collision with boxes
+        scene->checkVerticalCollision(position.x, playerBottom, position.z, PLAYER_RADIUS, PLAYER_HEIGHT, groundY);
+
+        // Landing detection: if moving downward and we're at or below a surface
+        if (verticalVelocity <= 0.0f && playerBottom <= groundY + SKIN_WIDTH) {
+            // Snap to surface with skin width for stable landing
+            position.y = groundY + SKIN_WIDTH;
+            verticalVelocity = 0.0f;
+            isOnGround = true;
+            foundGround = true;
+        }
+        // Ceiling collision: if moving upward and hit ceiling
+        else if (verticalVelocity > 0.0f) {
+            float playerTop = position.y + PLAYER_HEIGHT;
+            // Check if head hit something (only trigger if actually found a box)
+            float ceilingY = 0.0f;
+            if (scene->checkVerticalCollision(position.x, playerTop - 0.1f, position.z, PLAYER_RADIUS, 0.1f, ceilingY) && ceilingY > 0.0f) {
+                if (playerTop >= ceilingY - SKIN_WIDTH) {
+                    // Hit ceiling, stop upward movement
+                    verticalVelocity = 0.0f;
+                    position.y = oldY; // Revert to previous position
+                }
+            }
+        }
     }
+
+    // Fallback to default ground level if no box found
+    if (!foundGround) {
+        if (position.y <= 0.0f + SKIN_WIDTH) {
+            position.y = SKIN_WIDTH;
+            verticalVelocity = 0.0f;
+            isOnGround = true;
+        } else {
+            isOnGround = false;
+        }
+    }
+
     updatePos();
 }

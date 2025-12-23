@@ -196,10 +196,6 @@ int main(int argc, char** argv) {
     scene->setLighting(lighting);
     std::cout << "Lighting initialized: Headlight mode ENABLED (follows camera)" << std::endl;
 
-    // Add a stationary target for shooting practice
-    Target* target1 = new Target(Vector3(0.0f, 1.5f, -10.0f), Vector3(2.0f, 2.0f, 0.5f), Color(1.0f, 0.0f, 0.0f));
-    scene->addTarget(target1);
-
     // === Mesh Import/Export Demo ===
     std::cout << "\n=== Mesh Import/Export Demo ===" << std::endl;
 
@@ -215,7 +211,7 @@ int main(int argc, char** argv) {
 
     // Demo: Create and export a test cube
     auto testCube = std::make_shared<Cube>(
-        Vector3(15.0f, 2.0f, 15.0f),
+        Vector3(15.0f, 1.5f, 15.0f),  // Y = height/2 = 3.0/2 = 1.5 (sits on ground)
         Vector3(3.0f, 3.0f, 3.0f),
         Color(1.0f, 0.5f, 0.0f)
     );
@@ -225,7 +221,7 @@ int main(int argc, char** argv) {
 
     // Demo: Create and export a test sphere
     auto testSphere = std::make_shared<Sphere>(
-        Vector3(-15.0f, 3.0f, 15.0f),
+        Vector3(-15.0f, 2.0f, 15.0f),  // Y = diameter/2 = 4.0/2 = 2.0 (sits on ground)
         4.0f,  // diameter
         Color(0.0f, 0.5f, 1.0f)
     );
@@ -235,7 +231,7 @@ int main(int argc, char** argv) {
 
     // Demo: Create and export a test cylinder
     auto testCylinder = std::make_shared<Cylinder>(
-        Vector3(-15.0f, 2.0f, -15.0f),
+        Vector3(-15.0f, 2.0f, -15.0f),  // Y = height/2 = 4.0/2 = 2.0 (sits on ground)
         4.0f,  // height
         2.0f,  // diameter
         Color(0.5f, 1.0f, 0.0f)
@@ -244,12 +240,48 @@ int main(int argc, char** argv) {
     MeshIO::exportShapeOBJ(testCylinder.get(), "../../resources/meshes/exported/test_cylinder.obj");
     std::cout << "Test cylinder exported to resources/meshes/exported/test_cylinder.obj" << std::endl;
 
+    // Demo: Create and export a test cone
+    auto testCone = std::make_shared<Cone>(
+        Vector3(20.0f, 1.5f, 0.0f),  // Y = height/2 = 3.0/2 = 1.5 (sits on ground)
+        3.0f,  // height
+        2.0f,  // base diameter
+        Color(1.0f, 0.8f, 0.0f)
+    );
+    scene->addShape(testCone);
+    MeshIO::exportShapeOBJ(testCone.get(), "../../resources/meshes/exported/test_cone.obj");
+    std::cout << "Test cone exported to resources/meshes/exported/test_cone.obj" << std::endl;
+
+    // Demo: Create and export a test prism (hexagonal)
+    auto testPrism = std::make_shared<Prism>(
+        Vector3(20.0f, 1.5f, -10.0f),  // Y = height/2 = 3.0/2 = 1.5 (sits on ground)
+        3.0f,  // height
+        2.5f,  // diameter
+        6,     // sides (hexagon)
+        Color(0.0f, 1.0f, 0.8f)
+    );
+    scene->addShape(testPrism);
+    MeshIO::exportShapeOBJ(testPrism.get(), "../../resources/meshes/exported/test_prism.obj");
+    std::cout << "Test prism (hexagon) exported to resources/meshes/exported/test_prism.obj" << std::endl;
+
+    // Demo: Create and export a test frustum (square pyramid frustum)
+    auto testFrustum = std::make_shared<Frustum>(
+        Vector3(20.0f, 1.5f, 10.0f),  // Y = height/2 = 3.0/2 = 1.5 (sits on ground)
+        3.0f,  // height
+        3.0f,  // bottom diameter
+        1.5f,  // top diameter
+        4,     // sides (square)
+        Color(1.0f, 0.4f, 0.8f)
+    );
+    scene->addShape(testFrustum);
+    MeshIO::exportShapeOBJ(testFrustum.get(), "../../resources/meshes/exported/test_frustum.obj");
+    std::cout << "Test frustum (square) exported to resources/meshes/exported/test_frustum.obj" << std::endl;
+
     // Demo: Import OBJ (if file exists)
     std::cout << "\n=== Mesh Import Demo ===" << std::endl;
     if (std::filesystem::exists("../../resources/meshes/imported/test.obj")) {
         auto imported = MeshIO::importOBJ("../../resources/meshes/imported/test.obj");
         if (imported) {
-            imported->setPosition(Vector3(-10.0f, 2.0f, -10.0f));
+            imported->setPosition(Vector3(-10.0f, 0.0f, -10.0f));  // Place on ground
             imported->setColor(Color(0.9f, 0.2f, 0.7f));
             scene->addShape(imported);
             std::cout << "Mesh imported from resources/meshes/imported/test.obj and added to scene!" << std::endl;
@@ -275,6 +307,7 @@ int main(int argc, char** argv) {
 
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
     camera_controller->setPlayerPosition(5.0f, 5.0f);  // Sync with Stob's starting position
+
     player = new Player(scene);
     gameUI = new UI(WINDOW_WIDTH, WINDOW_HEIGHT);
     inputHandler = new InputHandler(camera, camera_controller, scene, stob_0, player, gameUI, WINDOW_WIDTH, WINDOW_HEIGHT);

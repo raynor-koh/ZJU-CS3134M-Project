@@ -10,7 +10,7 @@
 
 class Shape {
 public:
-    enum ShapeType {CYLINDER, SPHERE, CUBE};
+    enum ShapeType {CYLINDER, SPHERE, CUBE, GENERIC_MESH};
     Shape(Vector3 ipos = Vector3(), Vector3 isize = Vector3(), Color icol = Color());
     virtual void draw() = 0;
 
@@ -118,5 +118,62 @@ public:
 private:
     Texture *texture;
     bool textureEnabled;
+    void init();
+};
+
+class Cone : public Shape {
+public:
+    Cone(Vector3 ipos, float height, float baseDiameter, Color icol = Color());
+    void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
+
+    void setSlices(int s) { slices = s; }
+    void setColor(Color icolor) { color = icolor; }
+
+    Vector3 getPosition() { return pos; }
+    Vector3 getSize() { return size; }
+private:
+    float height, baseRadius;
+    int slices;
+    void init();
+};
+
+class Prism : public Shape {
+public:
+    Prism(Vector3 ipos, float height, float diameter, int sides = 6, Color icol = Color());
+    void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
+
+    void setSides(int s) { if (s >= 3) sides = s; }
+    void setColor(Color icolor) { color = icolor; }
+
+    Vector3 getPosition() { return pos; }
+    Vector3 getSize() { return size; }
+private:
+    float height, radius;
+    int sides;
+    void init();
+};
+
+class Frustum : public Shape {
+public:
+    Frustum(Vector3 ipos, float height, float bottomDiameter, float topDiameter, int sides = 4, Color icol = Color());
+    void draw();
+    void tessellate(std::vector<Vector3>& positions,
+                   std::vector<Vector3>& normals,
+                   std::vector<int>& indices) const override;
+
+    void setSides(int s) { if (s >= 3) sides = s; }
+    void setColor(Color icolor) { color = icolor; }
+
+    Vector3 getPosition() { return pos; }
+    Vector3 getSize() { return size; }
+private:
+    float height, bottomRadius, topRadius;
+    int sides;
     void init();
 };

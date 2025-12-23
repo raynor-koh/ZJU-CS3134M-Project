@@ -30,6 +30,9 @@ public:
     const std::vector<Vertex>& getVertices() const { return vertices; }
     const std::vector<int>& getIndices() const { return indices; }
 
+    // Calculate and update AABB from vertex data
+    void calculateAABB();
+
     // Clear mesh data
     void clear();
 

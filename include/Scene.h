@@ -29,7 +29,12 @@ public:
 
     // Collision detection
     bool checkCollision(float x, float z, float radius) const;
+    bool checkCollision(float x, float y, float z, float radius, float height) const;
     float getGroundSize() const { return groundSize; }
+
+    // Vertical collision detection for landing on boxes
+    float getGroundHeightAt(float x, float z, float radius, float currentY) const;
+    bool checkVerticalCollision(float x, float y, float z, float radius, float height, float& outGroundY) const;
 
     // Bullet and target management
     void addTarget(Target* target);

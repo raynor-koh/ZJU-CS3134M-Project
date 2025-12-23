@@ -48,6 +48,25 @@ bool CollisionDetector::checkCollision(Shape *shape1, Shape *shape2) {
         Cube* cub2 = (Cube*)shape2;
         return checkCollision(*cub1, *cub2);
     }
+    // GenericMesh uses AABB collision (treat as Cube for collision purposes)
+    else if(type1 == Shape::GENERIC_MESH || type2 == Shape::GENERIC_MESH) {
+        // Use simple AABB collision for GenericMesh
+        Vector3 pos1 = shape1->getPosition();
+        Vector3 size1 = shape1->getSize();
+        Vector3 pos2 = shape2->getPosition();
+        Vector3 size2 = shape2->getSize();
+
+        Vector3 diff = Vector3(pos2.x - pos1.x, pos2.y - pos1.y, pos2.z - pos1.z);
+        Vector3 minDiff = Vector3(
+            (size1.x + size2.x) / 2.0f,
+            (size1.y + size2.y) / 2.0f,
+            (size1.z + size2.z) / 2.0f
+        );
+
+        return !(diff.x < -minDiff.x || diff.x > minDiff.x ||
+                 diff.y < -minDiff.y || diff.y > minDiff.y ||
+                 diff.z < -minDiff.z || diff.z > minDiff.z);
+    }
     else return false;
 }
 

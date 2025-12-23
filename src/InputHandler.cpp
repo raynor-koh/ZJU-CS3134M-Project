@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+
 extern bool Active_Third_Camera; // 声明外部变量
 InputHandler::InputHandler(Camera* camera, CameraController* camera_controller, Scene* scene, Stob* controlledStob, Player* player, UI* gameUI, int windowWidth, int windowHeight)
     : camera(camera), camera_controller(camera_controller), scene(scene), controlledStob(controlledStob), player(player), gameUI(gameUI), windowWidth(windowWidth), windowHeight(windowHeight),
@@ -95,27 +96,24 @@ void InputHandler::handleSpecialKey(int key, int x, int y) {
 }
 
 void InputHandler::handleMouseClick(int button, int state, int x, int y) {
-    if (state == GLUT_DOWN) {
-        if (button == GLUT_LEFT_BUTTON) {
-            Vector3 position, direction;
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        Vector3 position, direction;
 
-            if (Active_Third_Camera) {
-                // Third-person camera: shoot from Stob position following the vision direction (crosshair)
-                position = player->getPosition() + Vector3(0.0f, 0.5f, 0.0f);
-                direction = -player->getVisionDirection();
-            } else {
-                // First-person camera: shoot from camera position in look direction
-                position = Vector3(camera->getX(), camera->getY(), camera->getZ());
-                direction = camera->getLookDirection();
-            }
-
-            scene->fireBullet(position, direction.normalized());
+        if (Active_Third_Camera) {
+            // Third-person camera: shoot from Stob position following the vision direction (crosshair)
+            position = player->getPosition() + Vector3(0.0f, 0.5f, 0.0f);
+            direction = -player->getVisionDirection();
+        } else {
+            // First-person camera: shoot from camera position in look direction
+            position = Vector3(camera->getX(), camera->getY(), camera->getZ());
+            direction = camera->getLookDirection();
         }
+
+        scene->fireBullet(position, direction.normalized());
     }
 }
 
 void InputHandler::handleMouseMotion(int x, int y) {
-    
     if (!mouseCaptured) {
         return; // Don't process mouse movement when not captured
     }
@@ -259,8 +257,6 @@ void InputHandler::toggleCamera() {
         float camZ = camera->getZ();
 
         // Set Stob position (ground level)
-        // Vector3 newStobPos(camX, 0.0f, camZ);
-        // controlledStob->setPosition(newStobPos);
         Vector3 newPlayerPos(camX, 0.0f, camZ);
         player->setPosition(newPlayerPos);
 
