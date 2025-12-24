@@ -91,6 +91,9 @@ void InputHandler::handleKeyPress(unsigned char key) {
             glutPostRedisplay();
         }
     }
+    else if (key == 't' || key == 'T') {
+        scene->switchTexture();
+    }
 }
 
 void InputHandler::handleKeyRelease(unsigned char key) {

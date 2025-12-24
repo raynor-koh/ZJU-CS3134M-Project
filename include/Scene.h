@@ -51,6 +51,8 @@ public:
     // Scene bounds calculation for camera zoom-to-fit
     void calculateSceneBounds(Vector3& center, float& radius) const;
 
+    void switchTexture();
+
 private:
     void drawGround() const;
     void drawBoundaryWalls() const;

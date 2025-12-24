@@ -38,7 +38,9 @@ void Scene::initialize() {
     addShape(std::make_shared<Cube>(Vector3(-4.0f, 1.5f, 2.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));  // Already correct
     addShape(std::make_shared<Cube>(Vector3(10.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));  // Already correct
     addShape(std::make_shared<Cube>(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));  // Already correct
-    addShape(std::make_shared<Cube>(Vector3(3.0f, 4.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));  // Y = size.y/2 = 4.0
+    Cube* cube = new Cube(Vector3(3.0f, 4.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f));  // Y = size.y/2 = 4.0
+    addShape(std::shared_ptr<Cube>(cube));
+    objects[8]->bindTexture(textures[1], Shape::BOTH);
 }
 
 void Scene::draw() const {
@@ -527,4 +529,10 @@ void Scene::calculateSceneBounds(Vector3& center, float& radius) const {
     if (radius < 1.0f) {
         radius = 10.0f; // Default scene radius if very small
     }
+}
+
+void Scene::switchTexture() {
+    static int textureIndex = 1;
+    textureIndex = (textureIndex + 1) % textures.size();
+    objects[8]->bindTexture(textures[textureIndex]);
 }

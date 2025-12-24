@@ -7,7 +7,6 @@
 #include <vector>
 #include "Texture.h"
 
-
 class Shape {
 public:
     enum ShapeType {CYLINDER, SPHERE, CUBE, GENERIC_MESH};
@@ -35,6 +34,10 @@ public:
     Vector3 getAxis() const {return axis;}
     float getAxisAngle() const {return axisAngle;}
     ShapeType getType() const {return type;}
+
+    enum PartType {SIDE=0, CAP=1, BOTH=2};
+    virtual void bindTexture(Texture* texture, PartType type = BOTH) = 0;
+    void setTextureMode(bool enabled) { textureEnabled = enabled; }
 protected:
     ShapeType type;
     Vector3 pos, size;
@@ -42,11 +45,13 @@ protected:
     float axisAngle;
     Color color;
     CollisionType collisionType;
+
+    bool textureEnabled;
 };
 
 class Cylinder : public Shape {
 public:
-    enum PartType {SIDE=0, CAP=1, BOTH=2};
+    // enum PartType {SIDE=0, CAP=1, BOTH=2};
     Cylinder(Vector3 ipos, float ih, float idiameter, Color icol = Color());
     Cylinder(Vector3 ipos, float ih, float idiameter, Color icolSide, Color icolCap);
     Cylinder(Vector3 ipos, float ih, float idiameter, Vector3 iaxis, float iaxisAngle);
@@ -58,7 +63,7 @@ public:
     void setSlices(int s) { slices = s;}
     void bindTexture(Texture* texture, enum PartType type);
     void setColor(Color icolor, enum PartType type = BOTH);
-    void setTextureMode(bool enabled) { textureEnabled = enabled; }
+    // void setTextureMode(bool enabled) { textureEnabled = enabled; }
 
     Vector3 getPosition() {return pos;}
     Vector3 getSize() {return size;}
@@ -71,7 +76,7 @@ private:
     int slices;
     Color colorSide, colorCap, color;
     Texture *textureSide, *textureCap;
-    bool textureEnabled;
+    // bool textureEnabled;
     void init();
 };
 
@@ -85,9 +90,9 @@ public:
                    std::vector<int>& indices) const override;
 
     void setSlices(int slice, int snack) { slices = slice; stacks = snack; }
-    void bindTexture(Texture* itexture) { texture = itexture; }
+    void bindTexture(Texture* itexture, PartType type) { texture = itexture; setTextureMode(true); }
     void setColor(Color icolor) {color = icolor;}
-    void setTextureMode(bool enabled) { textureEnabled = enabled; }
+    // void setTextureMode(bool enabled) { textureEnabled = enabled; }
     void setRotation(Vector3 iRotationAxis, float iRotationAngle) { axis = iRotationAxis; axisAngle = iRotationAngle; }
 
     Vector3 getPosition() {return pos;}
@@ -97,7 +102,7 @@ private:
     float radius, axisAngle;
     int slices, stacks;
     Texture *texture;
-    bool textureEnabled;
+    // bool textureEnabled;
     void init();
 };
 
@@ -110,14 +115,14 @@ public:
                    std::vector<int>& indices) const override;
 
     void setColor(Color icolor) {color = icolor;}
-    void bindTexture(Texture* itexture) {texture = itexture;}
-    void setTextureMode(bool enabled) { textureEnabled = enabled;}
+    void bindTexture(Texture* itexture, PartType type) {texture = itexture; setTextureMode(true);}
+    // void setTextureMode(bool enabled) { textureEnabled = enabled;}
 
     Vector3 getPosition() {return pos;}
     Vector3 getSize() {return size;}
 private:
     Texture *texture;
-    bool textureEnabled;
+    // bool textureEnabled;
     void init();
 };
 
@@ -134,6 +139,8 @@ public:
 
     Vector3 getPosition() { return pos; }
     Vector3 getSize() { return size; }
+
+    void bindTexture(Texture* texture, PartType type) {}
 private:
     float height, baseRadius;
     int slices;
@@ -153,6 +160,8 @@ public:
 
     Vector3 getPosition() { return pos; }
     Vector3 getSize() { return size; }
+
+    void bindTexture(Texture* texture, PartType type) {}
 private:
     float height, radius;
     int sides;
@@ -172,6 +181,8 @@ public:
 
     Vector3 getPosition() { return pos; }
     Vector3 getSize() { return size; }
+    
+    void bindTexture(Texture* texture, PartType type) {}
 private:
     float height, bottomRadius, topRadius;
     int sides;

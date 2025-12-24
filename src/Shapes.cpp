@@ -99,6 +99,7 @@ void Cylinder::draw() {
 void Cylinder::bindTexture(Texture* texture, enum PartType type) {
     if(type == SIDE) textureSide = texture;
     else if(type == CAP) textureCap = texture;
+    setTextureMode(texture != NULL);
 }
 
 void Cylinder::setColor(Color icolor, enum PartType type) {

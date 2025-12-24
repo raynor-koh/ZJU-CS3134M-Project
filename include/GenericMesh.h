@@ -36,6 +36,7 @@ public:
     // Clear mesh data
     void clear();
 
+    void bindTexture(Texture* texture, PartType type) {}
 private:
     std::vector<Vertex> vertices;
     std::vector<int> indices;  // Triangle list
