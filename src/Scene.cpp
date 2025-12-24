@@ -28,6 +28,7 @@ void Scene::initialize() {
     // addGameObject(new GameObject(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.5f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
     // addGameObject(new GameObject(Vector3(3.0f, 2.0f, 8.0f), Vector3(4.0f, 4.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
     addTexture(new Texture("resources/textures/WoodCap.bmp"));
+    addTexture(new Texture("resources/textures/WoodSide.bmp"));
     addEnemy(new Enemy(Vector3(-5.0f, 0.0f, -5.0f), Color(0.7f, 1.0f, 0.3f), Color(0.1f, 0.3f, 0.5f)));
     addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 3.0f), 1.0f, 1.0f, Color(0.1f, 1.0f, 1.0f)));  // Y = height/2 = 0.5
     addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 5.0f), 1.0f, 1.0f, Color(0.4f, 0.1f, 0.9f)));  // Already correct
