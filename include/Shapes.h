@@ -38,6 +38,8 @@ public:
     enum PartType {SIDE=0, CAP=1, BOTH=2};
     virtual void bindTexture(Texture* texture, PartType type = BOTH) = 0;
     void setTextureMode(bool enabled) { textureEnabled = enabled; }
+    virtual std::string getTextureName(PartType type = BOTH) = 0;
+    virtual bool isValidPartType(PartType type) = 0;
 protected:
     ShapeType type;
     Vector3 pos, size;
@@ -70,6 +72,8 @@ public:
     Vector3 getTopCenter() {return pos + axis * (height / 2.0f);}
     Vector3 getBottomCenter() {return pos - axis * (height / 2.0f);}
     float getBoundingSphereRadius() {return std::sqrt(radius * radius + height * height / 4.0f);}
+    std::string getTextureName(enum PartType type);
+    bool isValidPartType(PartType type);
 private:
     Vector3 axis;
     float height, radius, axisAngle;
@@ -97,6 +101,8 @@ public:
 
     Vector3 getPosition() {return pos;}
     float getRadius() {return radius;}
+    std::string getTextureName(PartType type = BOTH);
+    bool isValidPartType(PartType type);
 private:
     Vector3 axis;
     float radius, axisAngle;
@@ -120,6 +126,8 @@ public:
 
     Vector3 getPosition() {return pos;}
     Vector3 getSize() {return size;}
+    std::string getTextureName(PartType type = BOTH);
+    bool isValidPartType(PartType type);
 private:
     Texture *texture;
     // bool textureEnabled;
@@ -141,6 +149,8 @@ public:
     Vector3 getSize() { return size; }
 
     void bindTexture(Texture* texture, PartType type) {}
+    std::string getTextureName(PartType type = BOTH) {return "";}
+    bool isValidPartType(PartType type) {return type == BOTH; }
 private:
     float height, baseRadius;
     int slices;
@@ -162,6 +172,8 @@ public:
     Vector3 getSize() { return size; }
 
     void bindTexture(Texture* texture, PartType type) {}
+    std::string getTextureName(PartType type = BOTH) {return "";}
+    bool isValidPartType(PartType type) { return type == BOTH; }
 private:
     float height, radius;
     int sides;
@@ -183,6 +195,8 @@ public:
     Vector3 getSize() { return size; }
     
     void bindTexture(Texture* texture, PartType type) {}
+    std::string getTextureName(PartType type = BOTH) {return "";}
+    bool isValidPartType(PartType type) {return type == BOTH; }
 private:
     float height, bottomRadius, topRadius;
     int sides;

@@ -129,7 +129,7 @@ void Stob::draw() {
         float theta2 = (2.0f * M_PI * (i + 1)) / slices;
 
         if(textureEnabled) glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, textures[1].ID);
+        glBindTexture(GL_TEXTURE_2D, textures[1].getID());
         glBegin(GL_TRIANGLES);
         if(textureEnabled) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorCap.r, colorCap.g, colorCap.b);
@@ -154,7 +154,7 @@ void Stob::draw() {
         glVertex3f(cosf(theta2), 1.0f, sinf(theta2));
         glEnd();
 
-        glBindTexture(GL_TEXTURE_2D, textures[0].ID);
+        glBindTexture(GL_TEXTURE_2D, textures[0].getID());
         glBegin(GL_QUADS);
         if(textureEnabled) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorSide.r, colorSide.g, colorSide.b);

@@ -49,7 +49,7 @@ void Cylinder::draw() {
     for(int i=0; i<slices; i++) {
         float theta1 = (2.0f * M_PI * i) / slices;
         float theta2 = (2.0f * M_PI * (i + 1)) / slices;
-        if(textureDraw) glBindTexture(GL_TEXTURE_2D, textureSide->ID);
+        if(textureDraw) glBindTexture(GL_TEXTURE_2D, textureSide->getID());
         glBegin(GL_TRIANGLES);
         if(textureDraw) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorCap.r, colorCap.g, colorCap.b);
@@ -74,7 +74,7 @@ void Cylinder::draw() {
         glVertex3f(cosf(theta2), 0.5f, sinf(theta2));
         glEnd();
 
-        if(textureDraw) glBindTexture(GL_TEXTURE_2D, textureSide->ID);
+        if(textureDraw) glBindTexture(GL_TEXTURE_2D, textureSide->getID());
         glBegin(GL_QUADS);
         if(textureDraw) glColor3f(color.r, color.g, color.b);
         else glColor3f(colorSide.r, colorSide.g, colorSide.b);
@@ -108,6 +108,17 @@ void Cylinder::setColor(Color icolor, enum PartType type) {
     else if(type == BOTH) colorSide = colorCap = icolor;
 }
 
+std::string Cylinder::getTextureName(enum PartType type) {
+    if(type == SIDE && textureSide) return textureSide->getName();
+    else if(type == CAP && textureCap) return textureCap->getName();
+    else if(textureSide) return textureSide->getName();
+    else return std::string("");
+}
+
+bool Cylinder::isValidPartType(PartType type) {
+    return (type == SIDE || type == CAP || type == BOTH);
+}
+
 Sphere::Sphere(Vector3 ipos, float idiameter, Color icol)
     : Shape(ipos, Vector3(idiameter, idiameter, idiameter), icol), 
       radius(idiameter/2.0f) {
@@ -133,7 +144,7 @@ void Sphere::draw() {
     bool textureDraw = textureEnabled && (texture != NULL);
     if(textureDraw) {
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture->ID);
+        glBindTexture(GL_TEXTURE_2D, texture->getID());
     }
     else {
         glDisable(GL_TEXTURE_2D);
@@ -172,6 +183,15 @@ void Sphere::draw() {
     glDisable(GL_TEXTURE_2D);
 }
 
+std::string Sphere::getTextureName(PartType type) {
+    if(texture) return texture->getName();
+    else return std::string("");
+}
+
+bool Sphere::isValidPartType(PartType type) {
+    return (type == BOTH);
+}
+
 Cube::Cube(Vector3 ipos, Vector3 isize, Color icol)
     : Shape(ipos, isize/2.0f, icol) {
     init();
@@ -186,7 +206,7 @@ void Cube::draw() {
     bool textureDraw = textureEnabled && (texture != NULL);
     if(textureDraw) {
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, texture->ID);
+        glBindTexture(GL_TEXTURE_2D, texture->getID());
     }
     else {
         glDisable(GL_TEXTURE_2D);
@@ -252,6 +272,15 @@ void Cube::draw() {
     glVertex3f(-1.0f, 1.0f, -1.0f);
     glEnd();
     glPopMatrix();
+}
+
+std::string Cube::getTextureName(PartType type) {
+    if(texture) return texture->getName();
+    else return "";
+}
+
+bool Cube::isValidPartType(PartType type) {
+    return (type == BOTH);
 }
 
 // Tessellation implementations for mesh export

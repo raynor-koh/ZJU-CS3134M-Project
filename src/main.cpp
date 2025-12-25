@@ -103,6 +103,7 @@ void display() {
     //stob_0->draw();
     player->draw();
     gameUI->drawCross();
+    gameUI->drawEditorUI();
 
     // Draw Game Over overlay if dead
     if (gameState == GameState::GAME_OVER) {
@@ -251,7 +252,7 @@ void update(int value) {
     float deltaTime = 0.016f; // ~60 FPS = 16ms
 
     // Update game state based on free camera mode
-    if (inputHandler && inputHandler->isFreeCameraActive()) {
+    if (inputHandler && inputHandler->isFreeCameraActive() || inputHandler->isEditModeActive()) {
         if (gameState == GameState::PLAYING) {
             gameState = GameState::PAUSED;
         }
