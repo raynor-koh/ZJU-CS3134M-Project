@@ -36,6 +36,10 @@ public:
 
     // Lighting control
     void setLighting(Lighting* light) { lighting = light; }
+    
+    // Edit mode related
+    void toggleEditMode();  // Add this method declaration
+    bool isEditModeActive() const { return editMode; }
 
 private:
     void toggleMouseCapture();
@@ -62,4 +66,7 @@ private:
     int dragStartX, dragStartY;
 
     Lighting* lighting;  // Not owned by InputHandler, just a reference
+    
+    // Edit mode related members
+    bool editMode = false;
 };

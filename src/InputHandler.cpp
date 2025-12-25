@@ -1,4 +1,4 @@
-#include "InputHandler.h"
+﻿#include "InputHandler.h"
 #include "Lighting.h"
 #include <GL/glut.h>
 #include <cmath>
@@ -26,7 +26,15 @@ void InputHandler::handleKeyPress(unsigned char key) {
         toggleMouseCapture();
     }
     else if (key == 27) { // ESC key
-        exit(0);
+        if (editMode) {
+            // If in edit mode, exit edit mode instead of exiting program
+            toggleEditMode();
+        } else {
+            exit(0);
+        }
+    }
+    else if (key == 'e' || key == 'E') { // 'E' key - toggle edit mode
+        toggleEditMode();
     }
     else if (key == 'c' || key == 'C') { // 'C' 键 - 切换摄像机
         toggleCamera();
@@ -130,6 +138,11 @@ void InputHandler::handleSpecialKey(int key, int x, int y) {
 }
 
 void InputHandler::handleMouseClick(int button, int state, int x, int y) {
+    if (editMode) {
+        gameUI->handleEditorClick(button, state, x, y);
+        return; // Don't shoot in edit mode
+    }
+
     // Free Camera mode: Alt+drag for orbit/pan
     if (freeCameraActive) {
         int modifiers = glutGetModifiers();
@@ -185,6 +198,15 @@ void InputHandler::handleMouseClick(int button, int state, int x, int y) {
 }
 
 void InputHandler::handleMouseMotion(int x, int y) {
+    // Handle slider dragging in edit mode
+    if (editMode) {
+        gameUI->handleMouseMotion(x, y); // This will handle slider dragging
+        // 如果UI正在拖动滑动条，则不处理其他鼠标移动
+        if (gameUI->isDraggingSlider()) {
+            return; // 不处理其他鼠标移动事件
+        }
+    }
+
     // Free Camera mode: handle orbit/pan dragging
     if (freeCameraActive) {
         if (isOrbitDragging && free_camera) {
@@ -430,5 +452,27 @@ void InputHandler::toggleFreeCamera() {
         // Reset drag states
         isOrbitDragging = false;
         isPanDragging = false;
+    }
+}
+
+void InputHandler::toggleEditMode() {
+    editMode = !editMode;
+    
+    if (editMode) {
+        // Enter edit mode
+        gameUI->setEditMode(EditModeState::ACTIVE);
+        // Update object list
+        gameUI->updateObjectList(scene->getObjects());
+        mouseCaptured = false;
+        glutSetCursor(GLUT_CURSOR_INHERIT);
+        std::cout << "Entering edit mode, press E to exit" << std::endl;
+    } else {
+        // Exit edit mode
+        gameUI->setEditMode(EditModeState::INACTIVE);
+        mouseCaptured = true;
+        glutSetCursor(GLUT_CURSOR_NONE);
+        glutWarpPointer(windowWidth / 2, windowHeight / 2);
+        firstMouse = true;
+        std::cout << "Exiting edit mode" << std::endl;
     }
 }

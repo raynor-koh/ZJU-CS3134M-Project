@@ -37,6 +37,9 @@ public:
     void clear();
 
     void bindTexture(Texture* texture, PartType type) {}
+
+    std::string getTextureName(PartType type = BOTH) {return "";}
+    bool isValidPartType(PartType type) {return type == BOTH; }
 private:
     std::vector<Vertex> vertices;
     std::vector<int> indices;  // Triangle list
