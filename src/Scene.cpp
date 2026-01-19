@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 #include "Scene.h"
 #include "Bullet.h"
 #include "Target.h"
@@ -9,7 +10,8 @@
 #include <cmath>
 
 Scene::Scene()
-    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f), lighting(nullptr) {
+    : groundSize(50.0f), groundColor(0.2f, 0.6f, 0.2f), wallHeight(5.0f), wallThickness(1.0f), lighting(nullptr),
+      playerInsideSafeZone(false) {
 }
 
 Scene::~Scene() {
@@ -67,6 +69,7 @@ void Scene::draw() const {
 
     drawGround();
     drawBoundaryWalls();
+    drawSafeZoneIndicator();
 
     for (const auto& obj : gameObjects) {
         obj->draw();
@@ -122,6 +125,14 @@ void Scene::rebuildCollisionGrid() {
 
 void Scene::rebuildNavigationGrid() {
     navigationGrid.initialize(objects);
+    navigationGrid.blockCircle(0.0f, 0.0f, SAFE_ZONE_RADIUS + NavigationGrid::ENEMY_RADIUS);
+}
+
+bool Scene::isInSafeZone(const Vector3& position, float margin) const {
+    float dx = position.x;
+    float dz = position.z;
+    float effectiveRadius = SAFE_ZONE_RADIUS + margin;
+    return dx * dx + dz * dz <= effectiveRadius * effectiveRadius;
 }
 
 void Scene::drawGround() const {
@@ -173,6 +184,67 @@ void Scene::drawBoundaryWalls() const {
     glPopMatrix();
 
     glPopMatrix();
+}
+
+void Scene::drawSafeZoneIndicator() const {
+    const float radius = SAFE_ZONE_RADIUS;
+    const float height = SAFE_ZONE_LIGHT_HEIGHT;
+    const int segments = SAFE_ZONE_CIRCLE_SEGMENTS;
+    const float fillAlpha = playerInsideSafeZone ? 0.05f : 0.25f;
+    const float outlineAlpha = 0.8f;
+
+    glPushAttrib(GL_ENABLE_BIT | GL_LINE_BIT | GL_COLOR_BUFFER_BIT);
+    glDisable(GL_LIGHTING);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    glColor4f(1.0f, 1.0f, 0.0f, fillAlpha);
+    glBegin(GL_TRIANGLE_STRIP);
+    for (int i = 0; i <= segments; ++i) {
+        int idx = i % segments;
+        float angle = (2.0f * M_PI * idx) / segments;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+
+    glLineWidth(2.0f);
+    glColor4f(1.0f, 1.0f, 0.0f, outlineAlpha);
+
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < segments; ++i) {
+        float angle = (2.0f * M_PI * i) / segments;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+    }
+    glEnd();
+
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < segments; ++i) {
+        float angle = (2.0f * M_PI * i) / segments;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+
+    glBegin(GL_LINES);
+    for (int i = 0; i < segments; i += 8) {
+        float angle = (2.0f * M_PI * i) / segments;
+        float x = cosf(angle) * radius;
+        float z = sinf(angle) * radius;
+        glVertex3f(x, 0.0f, z);
+        glVertex3f(x, height, z);
+    }
+    glEnd();
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+    glPopAttrib();
 }
 
 // Get the highest ground level at a given XZ position (for landing on boxes)

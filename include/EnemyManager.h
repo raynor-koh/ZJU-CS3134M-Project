@@ -53,6 +53,7 @@ private:
     void spawnEnemy(const Vector3& playerPos);
     void updateEnemyMovement(float deltaTime, const Vector3& playerPos);
     void removeDeadEnemies();
+    bool hasPathToPlayer(const Vector3& spawnPos, const Vector3& playerPos) const;
 
     // Check if spawn position is valid (not inside geometry)
     bool isValidSpawnPosition(const Vector3& pos) const;
@@ -77,6 +78,8 @@ private:
     // Enemy properties
     float enemySpeed;
 
+    static constexpr float ENEMY_COLLISION_HEIGHT = 2.4f;
+
     // Obstacle avoidance parameters (tunable)
     float avoidanceLookAhead;   // How far ahead to check for obstacles (default: 3.0)
     float avoidanceStrength;    // How strongly to avoid obstacles (default: 2.0)
@@ -93,6 +96,7 @@ private:
         int lastGoalX = -1;
         int lastGoalZ = -1;
         float replanTimer = 0.0f;
+        bool wandering = false;
     };
     std::unordered_map<Enemy*, EnemyPathInfo> pathInfo;
 

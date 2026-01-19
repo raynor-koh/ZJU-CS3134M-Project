@@ -181,6 +181,10 @@ void InputHandler::handleMouseClick(int button, int state, int x, int y) {
 
     // Normal gameplay: shooting
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (scene && player && scene->isInSafeZone(player->getPosition())) {
+            std::cout << "Safe zone active - cannot fire." << std::endl;
+            return;
+        }
         Vector3 position, direction;
 
         if (Active_Third_Camera) {

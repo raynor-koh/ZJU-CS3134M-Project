@@ -8,6 +8,33 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <algorithm>
+
+namespace {
+    float randomRange(float minVal, float maxVal) {
+        return minVal + (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * (maxVal - minVal);
+    }
+
+    Vector3 sampleWanderTarget(const Scene* scene) {
+        float worldLimit = 45.0f;
+        if (scene) {
+            worldLimit = scene->getGroundSize();
+        }
+        worldLimit = (std::max)(worldLimit - 2.0f, 5.0f);
+
+        Vector3 candidate;
+        candidate.y = 0.0f;
+        int attempts = 0;
+        do {
+            candidate.x = randomRange(-worldLimit, worldLimit);
+            candidate.z = randomRange(-worldLimit, worldLimit);
+            attempts++;
+            if (attempts >= 10) break;
+        } while (scene && scene->isInSafeZone(Vector3(candidate.x, 0.0f, candidate.z)));
+
+        return candidate;
+    }
+}
 
 EnemyManager::EnemyManager(Scene* scene)
     : scene(scene),
@@ -60,30 +87,36 @@ void EnemyManager::update(float deltaTime, GameState state, const Vector3& playe
 }
 
 void EnemyManager::spawnEnemy(const Vector3& playerPos) {
-    // Pick random angle
-    float angle = (static_cast<float>(rand()) / RAND_MAX) * 2.0f * static_cast<float>(M_PI);
+    const int maxAttempts = 12;
+    Vector3 spawnPos(0.0f, 0.0f, 0.0f);
+    bool validSpawn = false;
 
-    // Pick random distance between min and max spawn radius
-    float distance = minSpawnRadius + (static_cast<float>(rand()) / RAND_MAX) * (maxSpawnRadius - minSpawnRadius);
+    for (int attempt = 0; attempt < maxAttempts; ++attempt) {
+        float angle = (static_cast<float>(rand()) / RAND_MAX) * 2.0f * static_cast<float>(M_PI);
+        float distance = minSpawnRadius + (static_cast<float>(rand()) / RAND_MAX) * (maxSpawnRadius - minSpawnRadius);
+        float spawnX = playerPos.x + cos(angle) * distance;
+        float spawnZ = playerPos.z + sin(angle) * distance;
+        spawnPos = Vector3(spawnX, 0.0f, spawnZ);
 
-    // Calculate spawn position
-    float spawnX = playerPos.x + cos(angle) * distance;
-    float spawnZ = playerPos.z + sin(angle) * distance;
-    Vector3 spawnPos(spawnX, 0.0f, spawnZ);
-
-    // Validate spawn position
-    if (!isValidSpawnPosition(spawnPos)) {
-        // Try a few more times with different angles
-        for (int attempt = 0; attempt < 5; attempt++) {
-            angle = (static_cast<float>(rand()) / RAND_MAX) * 2.0f * static_cast<float>(M_PI);
-            spawnX = playerPos.x + cos(angle) * distance;
-            spawnZ = playerPos.z + sin(angle) * distance;
-            spawnPos = Vector3(spawnX, 0.0f, spawnZ);
-            if (isValidSpawnPosition(spawnPos)) {
-                break;
-            }
+        if (!isValidSpawnPosition(spawnPos)) {
+            continue;
         }
+        if (!hasPathToPlayer(spawnPos, playerPos)) {
+            continue;
+        }
+
+        validSpawn = true;
+        break;
     }
+
+    if (!validSpawn) {
+        return;
+    }
+
+    float spawnX = spawnPos.x;
+    float spawnZ = spawnPos.z;
+    float distance = std::sqrt((spawnX - playerPos.x) * (spawnX - playerPos.x) +
+                               (spawnZ - playerPos.z) * (spawnZ - playerPos.z));
 
     // Create enemy with random colors
     float r1 = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.7f;
@@ -112,7 +145,9 @@ void EnemyManager::spawnEnemy(const Vector3& playerPos) {
 void EnemyManager::updateEnemyMovement(float deltaTime, const Vector3& playerPos) {
     const float WAYPOINT_THRESHOLD = 0.5f;
     const float REPLAN_INTERVAL = 0.5f;
+    const float SAFE_ZONE_REPLAN_INTERVAL = 1.5f;
     const float MOVE_EPSILON = 0.01f;
+    const bool playerInSafeZone = scene && scene->isInSafeZone(playerPos);
 
     for (Enemy* enemy : managedEnemies) {
         if (!enemy || !enemy->isAlive()) continue;
@@ -124,26 +159,43 @@ void EnemyManager::updateEnemyMovement(float deltaTime, const Vector3& playerPos
             EnemyPathInfo& info = pathInfo[enemy];
             info.replanTimer -= deltaTime;
 
-            int startGX = navigationGrid->worldToGridX(enemyPos.x);
-            int startGZ = navigationGrid->worldToGridZ(enemyPos.z);
-            int goalGX = navigationGrid->worldToGridX(playerPos.x);
-            int goalGZ = navigationGrid->worldToGridZ(playerPos.z);
+            if (playerInSafeZone) {
+                info.wandering = true;
+                if (info.path.empty() || info.replanTimer <= 0.0f || info.nextIndex >= info.path.size()) {
+                    info.path.clear();
+                    Vector3 wanderTarget = sampleWanderTarget(scene);
+                    navigationGrid->findPath(enemyPos.x, enemyPos.z, wanderTarget.x, wanderTarget.z, info.path);
+                    info.nextIndex = 0;
+                    info.replanTimer = SAFE_ZONE_REPLAN_INTERVAL;
+                }
+            } else {
+                if (info.wandering) {
+                    info.wandering = false;
+                    info.nextIndex = 0;
+                    info.path.clear();
+                }
 
-            bool needReplan = info.path.empty() ||
-                              info.replanTimer <= 0.0f ||
-                              startGX != info.lastStartX || startGZ != info.lastStartZ ||
-                              goalGX != info.lastGoalX || goalGZ != info.lastGoalZ ||
-                              info.nextIndex >= info.path.size();
+                int startGX = navigationGrid->worldToGridX(enemyPos.x);
+                int startGZ = navigationGrid->worldToGridZ(enemyPos.z);
+                int goalGX = navigationGrid->worldToGridX(playerPos.x);
+                int goalGZ = navigationGrid->worldToGridZ(playerPos.z);
 
-            if (needReplan) {
-                info.path.clear();
-                navigationGrid->findPath(enemyPos.x, enemyPos.z, playerPos.x, playerPos.z, info.path);
-                info.nextIndex = 0;
-                info.replanTimer = REPLAN_INTERVAL;
-                info.lastStartX = startGX;
-                info.lastStartZ = startGZ;
-                info.lastGoalX = goalGX;
-                info.lastGoalZ = goalGZ;
+                bool needReplan = info.path.empty() ||
+                                  info.replanTimer <= 0.0f ||
+                                  startGX != info.lastStartX || startGZ != info.lastStartZ ||
+                                  goalGX != info.lastGoalX || goalGZ != info.lastGoalZ ||
+                                  info.nextIndex >= info.path.size();
+
+                if (needReplan) {
+                    info.path.clear();
+                    navigationGrid->findPath(enemyPos.x, enemyPos.z, playerPos.x, playerPos.z, info.path);
+                    info.nextIndex = 0;
+                    info.replanTimer = REPLAN_INTERVAL;
+                    info.lastStartX = startGX;
+                    info.lastStartZ = startGZ;
+                    info.lastGoalX = goalGX;
+                    info.lastGoalZ = goalGZ;
+                }
             }
 
             if (info.nextIndex < info.path.size()) {
@@ -155,6 +207,8 @@ void EnemyManager::updateEnemyMovement(float deltaTime, const Vector3& playerPos
                     info.nextIndex++;
                     if (info.nextIndex < info.path.size()) {
                         targetPos = info.path[info.nextIndex];
+                    } else if (playerInSafeZone) {
+                        targetPos = enemyPos;
                     } else {
                         targetPos = playerPos;
                     }
@@ -198,6 +252,10 @@ float EnemyManager::checkPlayerCollision(Player* player, float deltaTime) {
         return 0.0f;
     }
 
+    if (scene && scene->isInSafeZone(player->getPosition())) {
+        return 0.0f;
+    }
+
     // Use Player's existing collision check with enemies
     if (player->checkCollision(managedEnemies)) {
         damageCooldown = hitCooldownDuration;
@@ -206,6 +264,23 @@ float EnemyManager::checkPlayerCollision(Player* player, float deltaTime) {
     }
 
     return 0.0f;
+}
+
+bool EnemyManager::hasPathToPlayer(const Vector3& spawnPos, const Vector3& playerPos) const {
+    if (!navigationGrid || !scene) {
+        return true;
+    }
+
+    Vector3 targetPos = playerPos;
+    if (scene->isInSafeZone(playerPos)) {
+        targetPos = sampleWanderTarget(scene);
+    }
+
+    std::vector<Vector3> path;
+    if (!navigationGrid->findPath(spawnPos.x, spawnPos.z, targetPos.x, targetPos.z, path)) {
+        return false;
+    }
+    return !path.empty();
 }
 
 void EnemyManager::removeDeadEnemies() {
@@ -232,9 +307,12 @@ bool EnemyManager::isValidSpawnPosition(const Vector3& pos) const {
         return false;
     }
 
-    // Check collision with scene objects using a simple radius check
-    const float enemyRadius = 1.0f;
-    return !scene->checkCollision(pos.x, pos.z, enemyRadius);
+    const float enemyRadius = 1.8f;
+    if (scene->isInSafeZone(pos, enemyRadius)) {
+        return false;
+    }
+
+    return !scene->checkCollision(pos.x, 0.0f, pos.z, enemyRadius, ENEMY_COLLISION_HEIGHT);
 }
 
 void EnemyManager::clear() {
@@ -254,6 +332,9 @@ void EnemyManager::reset() {
 bool EnemyManager::canMoveTo(float x, float z) const {
     if (!scene) return true;
     const float ENEMY_RADIUS = 1.8f;
-    const float ENEMY_HEIGHT = 5.0f;
+    const float ENEMY_HEIGHT = ENEMY_COLLISION_HEIGHT;
+    if (scene->isInSafeZone(Vector3(x, 0.0f, z), ENEMY_RADIUS)) {
+        return false;
+    }
     return !scene->checkCollision(x, 0.0f, z, ENEMY_RADIUS, ENEMY_HEIGHT);
 }

@@ -272,6 +272,9 @@ void update(int value) {
         // Update physics (jumping, gravity)
         camera->update(deltaTime);
         player->update(deltaTime);
+        if (scene && player) {
+            scene->setPlayerInsideSafeZone(scene->isInSafeZone(player->getPosition()));
+        }
 
         // Update enemy manager (spawning, movement)
         if (enemyManager && player) {
@@ -499,20 +502,20 @@ int main(int argc, char** argv) {
     std::cout << "Final scene with test shapes exported to resources/meshes/exported/final_scene.obj" << std::endl;
     std::cout << "==============================\n" << std::endl;
 
-    stob_0 = new Stob(Vector3(5.0f, 0.0f, 5.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
+    stob_0 = new Stob(Vector3(0.0f, 0.0f, 0.0f), 2.0f, 1.0f, Color(1.0f, 0.0f, 0.0f));
     stob_0->setTestDraw(true);//开启方向箭头绘制
     stob_0->setScene(scene);  // Set scene for collision detection
     stob_0->setVisible(false); // Hide Stob initially (first-person view)
 
-    camera = new Camera(5.0f, 1.5f, 5.0f);  // Position camera at eye level above Stob
+    camera = new Camera(0.0f, 1.5f, 0.0f);  // Position camera at eye level above Stob
     camera->setScene(scene);  // Set scene for collision detection
     camera->setCollisionRadius(0.5f);  // Set player collision radius
 
     camera_controller = new CameraController(WINDOW_WIDTH, WINDOW_HEIGHT);
-    camera_controller->setPlayerPosition(5.0f, 5.0f);  // Sync with Stob's starting position
+    camera_controller->setPlayerPosition(0.0f, 0.0f);  // Sync with Stob's starting position
 
     // Create Free Camera / Spectator mode camera
-    free_camera = new FreeCamera(5.0f, 10.0f, 5.0f);  // Start elevated above scene
+    free_camera = new FreeCamera(0.0f, 10.0f, 0.0f);  // Start elevated above scene
 
     player = new Player(scene);
     // IMPORTANT: Sync player position with camera at startup to prevent position mismatch

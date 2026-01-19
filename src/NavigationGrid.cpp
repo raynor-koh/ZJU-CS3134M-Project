@@ -243,3 +243,28 @@ int NavigationGrid::clampInt(int value, int minVal, int maxVal) {
     if (value > maxVal) return maxVal;
     return value;
 }
+
+void NavigationGrid::blockCircle(float centerX, float centerZ, float radius) {
+    float minX = centerX - radius;
+    float maxX = centerX + radius;
+    float minZ = centerZ - radius;
+    float maxZ = centerZ + radius;
+
+    int gridMinX = clampInt(worldToGridX(minX), 0, GRID_SIZE - 1);
+    int gridMaxX = clampInt(worldToGridX(maxX), 0, GRID_SIZE - 1);
+    int gridMinZ = clampInt(worldToGridZ(minZ), 0, GRID_SIZE - 1);
+    int gridMaxZ = clampInt(worldToGridZ(maxZ), 0, GRID_SIZE - 1);
+
+    float radiusSq = radius * radius;
+    for (int gx = gridMinX; gx <= gridMaxX; ++gx) {
+        for (int gz = gridMinZ; gz <= gridMaxZ; ++gz) {
+            float cellX = gridToWorldX(gx);
+            float cellZ = gridToWorldZ(gz);
+            float dx = cellX - centerX;
+            float dz = cellZ - centerZ;
+            if (dx * dx + dz * dz <= radiusSq) {
+                grid[gx][gz].blocked = true;
+            }
+        }
+    }
+}

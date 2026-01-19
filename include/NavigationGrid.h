@@ -24,6 +24,8 @@ public:
     float gridToWorldX(int gx) const;
     float gridToWorldZ(int gz) const;
 
+    void blockCircle(float centerX, float centerZ, float radius);
+
 private:
     struct Cell {
         bool blocked;

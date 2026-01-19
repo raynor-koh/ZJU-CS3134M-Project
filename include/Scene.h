@@ -53,6 +53,11 @@ public:
     const NavigationGrid& getNavigationGrid() const { return navigationGrid; }
     void rebuildNavigationGrid();
 
+    // Safe zone
+    bool isInSafeZone(const Vector3& position, float margin = 0.0f) const;
+    void setPlayerInsideSafeZone(bool inside) { playerInsideSafeZone = inside; }
+    bool isPlayerInsideSafeZone() const { return playerInsideSafeZone; }
+
     // Lighting system
     void setLighting(Lighting* light) { lighting = light; }
     Lighting* getLighting() const { return lighting; }
@@ -65,6 +70,7 @@ public:
 private:
     void drawGround() const;
     void drawBoundaryWalls() const;
+    void drawSafeZoneIndicator() const;
     // void updateBullets(float deltaTime);
     void checkBulletCollisions();
 
@@ -85,4 +91,10 @@ private:
     // Grid-based collision detection
     CollisionGrid collisionGrid;
     NavigationGrid navigationGrid;
+
+    static constexpr float SAFE_ZONE_RADIUS = 4.0f;
+    static constexpr float SAFE_ZONE_LIGHT_HEIGHT = 15.0f;
+    static constexpr int SAFE_ZONE_CIRCLE_SEGMENTS = 64;
+
+    bool playerInsideSafeZone;
 };

@@ -208,6 +208,11 @@ void Player::update(float deltaTime) {
         }
     }
 
+    if (scene && scene->isInSafeZone(position)) {
+        const float SAFE_ZONE_HEAL_PER_SECOND = 12.0f;
+        heal(SAFE_ZONE_HEAL_PER_SECOND * deltaTime);
+    }
+
     updatePos();
 }
 
