@@ -29,34 +29,89 @@ void Scene::initialize() {
     // Add obstacles - SPREAD OUT to allow enemy navigation (min 8 units apart)
     // Clear zone: No obstacles within 12 units of origin (player spawn area)
 
-    // Cylinder 1 at (-18, 12) - northwest quadrant
-    addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 1.0f, 12.0f), 2.0f, 2.0f, Color(0.1f, 1.0f, 1.0f)));
+    // Tree (trunk + canopy) at (-18, 12)
+    addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 1.5f, 12.0f), 3.0f, 0.8f, Color(0.5f, 0.3f, 0.15f)));
+    addShape(std::make_shared<Cone>(Vector3(-18.0f, 4.5f, 12.0f), 3.0f, 3.0f, Color(0.1f, 0.6f, 0.2f)));
 
-    // Cylinder 2 at (0, -25) - south
-    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 1.0f, -25.0f), 2.0f, 2.0f, Color(0.4f, 0.1f, 0.9f)));
+    // Lamp post at (0, -25)
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 2.0f, -25.0f), 4.0f, 0.4f, Color(0.2f, 0.2f, 0.2f)));
+    addShape(std::make_shared<Sphere>(Vector3(0.0f, 4.2f, -25.0f), 1.0f, Color(1.0f, 0.95f, 0.6f)));
 
-    // Sphere at (30, 0) - east
-    addShape(std::make_shared<Sphere>(Vector3(30.0f, 1.0f, 0.0f), 2.0f, Color(0.8f, 0.2f, 0.6f)));
+    // Boulder cluster at (30, 0)
+    addShape(std::make_shared<Sphere>(Vector3(30.0f, 1.4f, 0.0f), 2.8f, Color(0.45f, 0.45f, 0.5f)));
+    addShape(std::make_shared<Sphere>(Vector3(31.5f, 0.7f, -1.5f), 1.4f, Color(0.4f, 0.4f, 0.45f)));
+    addShape(std::make_shared<Sphere>(Vector3(28.5f, 0.7f, 1.2f), 1.2f, Color(0.4f, 0.4f, 0.45f)));
 
-    // Cube 1 at (15, 15) - northeast quadrant
-    addShape(std::make_shared<Cube>(Vector3(15.0f, 0.5f, 15.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
+    // Crate stack at (15, 15)
+    auto crate1 = std::make_shared<Cube>(Vector3(15.0f, 1.0f, 15.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.7f, 0.4f, 0.2f));
+    auto crate2 = std::make_shared<Cube>(Vector3(15.8f, 3.0f, 15.2f), Vector3(1.6f, 2.0f, 1.6f), Color(0.7f, 0.4f, 0.2f));
+    addShape(crate1);
+    addShape(crate2);
+    crate1->bindTexture(textures[1], Shape::BOTH);
+    crate2->bindTexture(textures[1], Shape::BOTH);
 
-    // Cube 2 (tall) at (20, -15) - southeast quadrant
-    addShape(std::make_shared<Cube>(Vector3(20.0f, 1.5f, -15.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));
+    // Silo at (20, -15)
+    addShape(std::make_shared<Cylinder>(Vector3(20.0f, 2.5f, -15.0f), 5.0f, 2.0f, Color(0.7f, 0.7f, 0.7f)));
+    addShape(std::make_shared<Cone>(Vector3(20.0f, 5.5f, -15.0f), 2.0f, 2.6f, Color(0.5f, 0.5f, 0.5f)));
 
-    // Cube 3 at (-22, -20) - southwest quadrant
-    addShape(std::make_shared<Cube>(Vector3(-22.0f, 1.0f, -20.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
+    // Bench at (-22, -20)
+    addShape(std::make_shared<Cube>(Vector3(-22.0f, 0.8f, -20.0f), Vector3(3.0f, 0.4f, 1.0f), Color(0.4f, 0.25f, 0.15f)));
+    addShape(std::make_shared<Cube>(Vector3(-23.2f, 0.4f, -20.3f), Vector3(0.4f, 0.8f, 0.4f), Color(0.35f, 0.2f, 0.1f)));
+    addShape(std::make_shared<Cube>(Vector3(-20.8f, 0.4f, -19.7f), Vector3(0.4f, 0.8f, 0.4f), Color(0.35f, 0.2f, 0.1f)));
 
-    // Cube 4 at (-30, 25) - northwest far
-    addShape(std::make_shared<Cube>(Vector3(-30.0f, 0.75f, 25.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
+    // Signpost at (-30, 25)
+    addShape(std::make_shared<Cylinder>(Vector3(-30.0f, 1.5f, 25.0f), 3.0f, 0.4f, Color(0.4f, 0.3f, 0.2f)));
+    addShape(std::make_shared<Cube>(Vector3(-30.0f, 2.4f, 25.8f), Vector3(2.0f, 0.8f, 0.2f), Color(0.9f, 0.9f, 0.7f)));
 
-    // Cube 5 (large textured) at (0, 35) - north
-    Cube* cube = new Cube(Vector3(0.0f, 4.0f, 35.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f));
-    addShape(std::shared_ptr<Cube>(cube));
-    objects[7]->bindTexture(textures[1], Shape::BOTH);
+    // Barn/warehouse at (0, 35)
+    auto barn = std::make_shared<Cube>(Vector3(0.0f, 4.0f, 35.0f), Vector3(6.0f, 8.0f, 6.0f), Color(0.85f, 0.45f, 0.2f));
+    addShape(barn);
+    barn->bindTexture(textures[1], Shape::BOTH);
+    addShape(std::make_shared<Cylinder>(Vector3(2.5f, 7.0f, 33.5f), 2.0f, 0.6f, Color(0.2f, 0.2f, 0.2f)));
 
-    // Cube 6 at (-35, -35) - southwest corner
-    addShape(std::make_shared<Cube>(Vector3(-35.0f, 0.5f, -35.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.3f, 0.3f, 0.8f)));
+    // Shed at (-35, -35)
+    addShape(std::make_shared<Cube>(Vector3(-35.0f, 1.0f, -35.0f), Vector3(3.0f, 2.0f, 3.0f), Color(0.5f, 0.35f, 0.2f)));
+    addShape(std::make_shared<Cone>(Vector3(-35.0f, 2.8f, -35.0f), 2.0f, 4.0f, Color(0.6f, 0.1f, 0.1f)));
+
+    // Water tower at (38, 22)
+    addShape(std::make_shared<Cylinder>(Vector3(38.0f, 3.0f, 22.0f), 6.0f, 1.0f, Color(0.6f, 0.6f, 0.7f)));
+    addShape(std::make_shared<Sphere>(Vector3(38.0f, 6.5f, 22.0f), 2.6f, Color(0.55f, 0.55f, 0.6f)));
+
+    // Barrel stack at (34, -28)
+    addShape(std::make_shared<Cylinder>(Vector3(34.0f, 1.0f, -28.0f), 2.0f, 1.4f, Color(0.55f, 0.3f, 0.1f)));
+    addShape(std::make_shared<Cylinder>(Vector3(35.6f, 1.0f, -28.6f), 2.0f, 1.4f, Color(0.55f, 0.3f, 0.1f)));
+
+    // Tent at (-10, 40)
+    addShape(std::make_shared<Cube>(Vector3(-10.0f, 0.4f, 40.0f), Vector3(3.8f, 0.6f, 3.8f), Color(0.3f, 0.3f, 0.35f)));
+    addShape(std::make_shared<Cone>(Vector3(-10.0f, 1.8f, 40.0f), 3.0f, 4.0f, Color(0.8f, 0.8f, 0.2f)));
+
+    // Fountain at (12, -38)
+    addShape(std::make_shared<Cylinder>(Vector3(12.0f, 0.4f, -38.0f), 0.8f, 4.0f, Color(0.5f, 0.5f, 0.55f)));
+    addShape(std::make_shared<Cylinder>(Vector3(12.0f, 1.2f, -38.0f), 1.6f, 2.0f, Color(0.6f, 0.6f, 0.65f)));
+    addShape(std::make_shared<Sphere>(Vector3(12.0f, 2.2f, -38.0f), 1.2f, Color(0.2f, 0.6f, 0.9f)));
+
+    // Windmill at (42, -8)
+    addShape(std::make_shared<Cylinder>(Vector3(42.0f, 3.0f, -8.0f), 6.0f, 1.2f, Color(0.8f, 0.8f, 0.8f)));
+    addShape(std::make_shared<Cone>(Vector3(42.0f, 7.0f, -8.0f), 2.0f, 2.6f, Color(0.7f, 0.7f, 0.7f)));
+    addShape(std::make_shared<Cube>(Vector3(42.0f, 6.2f, -8.0f), Vector3(4.0f, 0.2f, 0.4f), Color(0.95f, 0.95f, 0.95f)));
+    addShape(std::make_shared<Cube>(Vector3(42.0f, 6.2f, -8.0f), Vector3(0.4f, 0.2f, 4.0f), Color(0.95f, 0.95f, 0.95f)));
+
+    // Parked car at (-40, -5)
+    addShape(std::make_shared<Cube>(Vector3(-40.0f, 0.6f, -5.0f), Vector3(4.0f, 1.2f, 2.0f), Color(0.2f, 0.4f, 0.8f)));
+    addShape(std::make_shared<Cube>(Vector3(-39.8f, 1.4f, -5.0f), Vector3(2.4f, 1.0f, 1.6f), Color(0.25f, 0.45f, 0.85f)));
+    addShape(std::make_shared<Sphere>(Vector3(-41.6f, 0.3f, -5.8f), 0.6f, Color(0.1f, 0.1f, 0.1f)));
+    addShape(std::make_shared<Sphere>(Vector3(-41.6f, 0.3f, -4.2f), 0.6f, Color(0.1f, 0.1f, 0.1f)));
+    addShape(std::make_shared<Sphere>(Vector3(-38.4f, 0.3f, -5.8f), 0.6f, Color(0.1f, 0.1f, 0.1f)));
+    addShape(std::make_shared<Sphere>(Vector3(-38.4f, 0.3f, -4.2f), 0.6f, Color(0.1f, 0.1f, 0.1f)));
+
+    // Stone arch at (8, 22)
+    addShape(std::make_shared<Cube>(Vector3(7.4f, 1.5f, 22.0f), Vector3(0.8f, 3.0f, 0.8f), Color(0.6f, 0.6f, 0.6f)));
+    addShape(std::make_shared<Cube>(Vector3(10.6f, 1.5f, 22.0f), Vector3(0.8f, 3.0f, 0.8f), Color(0.6f, 0.6f, 0.6f)));
+    addShape(std::make_shared<Cube>(Vector3(9.0f, 3.4f, 22.0f), Vector3(3.6f, 0.8f, 0.8f), Color(0.6f, 0.6f, 0.6f)));
+
+    // Campfire ring at (-18, 42)
+    addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 0.2f, 42.0f), 0.4f, 1.8f, Color(0.3f, 0.3f, 0.3f)));
+    addShape(std::make_shared<Cone>(Vector3(-18.0f, 0.9f, 42.0f), 1.0f, 1.0f, Color(0.9f, 0.4f, 0.1f)));
 
     // Initialize the grids after all obstacles are added
     rebuildCollisionGrid();

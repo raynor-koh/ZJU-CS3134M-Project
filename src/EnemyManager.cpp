@@ -307,12 +307,11 @@ bool EnemyManager::isValidSpawnPosition(const Vector3& pos) const {
         return false;
     }
 
-    const float enemyRadius = 1.8f;
-    if (scene->isInSafeZone(pos, enemyRadius)) {
+    if (scene->isInSafeZone(pos, ENEMY_RADIUS)) {
         return false;
     }
 
-    return !scene->checkCollision(pos.x, 0.0f, pos.z, enemyRadius, ENEMY_COLLISION_HEIGHT);
+    return !scene->checkCollision(pos.x, 0.0f, pos.z, ENEMY_RADIUS, ENEMY_COLLISION_HEIGHT);
 }
 
 void EnemyManager::clear() {
@@ -331,7 +330,6 @@ void EnemyManager::reset() {
 
 bool EnemyManager::canMoveTo(float x, float z) const {
     if (!scene) return true;
-    const float ENEMY_RADIUS = 1.8f;
     const float ENEMY_HEIGHT = ENEMY_COLLISION_HEIGHT;
     if (scene->isInSafeZone(Vector3(x, 0.0f, z), ENEMY_RADIUS)) {
         return false;

@@ -78,7 +78,9 @@ private:
     // Enemy properties
     float enemySpeed;
 
-    static constexpr float ENEMY_COLLISION_HEIGHT = 2.4f;
+    static constexpr float ENEMY_RADIUS = 1.1f;
+    static constexpr float ENEMY_COLLISION_HEIGHT = 3.0f;
+    static constexpr float ENEMY_STEP_HEIGHT = 1.0f;
 
     // Obstacle avoidance parameters (tunable)
     float avoidanceLookAhead;   // How far ahead to check for obstacles (default: 3.0)

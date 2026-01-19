@@ -15,7 +15,7 @@ public:
     static constexpr float CELL_SIZE = 2.0f;
     static constexpr int GRID_SIZE = 50;       // 100 / 2 = 50 cells per axis
     static constexpr float GRID_OFFSET = 50.0f; // Offset to convert world coords to grid indices
-    static constexpr float ENEMY_RADIUS = 1.8f; // Padding added during marking (only place)
+    static constexpr float ENEMY_RADIUS = 1.1f; // Padding added during marking (only place)
 
     CollisionGrid();
 

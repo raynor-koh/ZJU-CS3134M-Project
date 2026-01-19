@@ -2,75 +2,108 @@
 #include <iostream>
 #include <cmath>
 
+namespace {
+    constexpr float ENEMY_SCALE = 0.6f;
+    constexpr float BODY_DIAMETER = 3.6f * ENEMY_SCALE;
+    constexpr float BODY_Y_OFFSET = 1.0f * ENEMY_SCALE;
+    constexpr float HEAD_DIAMETER = 2.4f * ENEMY_SCALE;
+    constexpr float HEAD_Y_OFFSET = 3.0f * ENEMY_SCALE;
+    constexpr float ARM_OFFSET_X = 1.8f * ENEMY_SCALE;
+    constexpr float ARM_OFFSET_Y = 1.5f * ENEMY_SCALE;
+    constexpr float ARM_LENGTH = 1.5f * ENEMY_SCALE;
+    constexpr float ARM_DIAMETER = 0.16f * ENEMY_SCALE;
+    constexpr float NOSE_OFFSET_Z = 1.2f * ENEMY_SCALE;
+    constexpr float NOSE_LENGTH = 0.5f * ENEMY_SCALE;
+    constexpr float NOSE_DIAMETER = 0.16f * ENEMY_SCALE;
+    constexpr float BUTTON_OFFSET_Z = 1.8f * ENEMY_SCALE;
+    constexpr float BUTTON1_Y_OFFSET = 1.8f * ENEMY_SCALE;
+    constexpr float BUTTON2_Y_OFFSET = 1.3f * ENEMY_SCALE;
+    constexpr float BUTTON3_Y_OFFSET = 0.8f * ENEMY_SCALE;
+    constexpr float BUTTON_DIAMETER = 0.24f * ENEMY_SCALE;
+    constexpr float HAT_BRIM_Y_OFFSET = 4.2f * ENEMY_SCALE;
+    constexpr float HAT_BRIM_HEIGHT = 0.1f * ENEMY_SCALE;
+    constexpr float HAT_BRIM_DIAMETER = 2.0f * ENEMY_SCALE;
+    constexpr float HAT_TOP_Y_OFFSET = 4.6f * ENEMY_SCALE;
+    constexpr float HAT_TOP_HEIGHT = 0.8f * ENEMY_SCALE;
+    constexpr float HAT_TOP_DIAMETER = 1.2f * ENEMY_SCALE;
+    constexpr float EYE_OFFSET_X = 0.3f * ENEMY_SCALE;
+    constexpr float EYE_OFFSET_Z = 1.1f * ENEMY_SCALE;
+    constexpr float EYE_Y_OFFSET = 3.3f * ENEMY_SCALE;
+    constexpr float EYE_DIAMETER = 0.2f * ENEMY_SCALE;
+    constexpr float HEALTH_BAR_Y_OFFSET = 5.2f * ENEMY_SCALE;
+}
+
 Enemy::Enemy(Vector3 ipos, Color icol) : position(ipos), yaw(0.0f), currentHealth(5.0f), maxHealth(5.0f), alive(true) {
     // Main body spheres (white)
     Color white(1.0f, 1.0f, 1.0f);
-    bodyLower = new Sphere(ipos + Vector3(0.0f, 1.0f, 0.0f), 3.6f, white);  // diameter = radius * 2
-    head = new Sphere(ipos + Vector3(0.0f, 3.0f, 0.0f), 2.4f, white);
+    bodyLower = new Sphere(ipos + Vector3(0.0f, BODY_Y_OFFSET, 0.0f), BODY_DIAMETER, white);
+    head = new Sphere(ipos + Vector3(0.0f, HEAD_Y_OFFSET, 0.0f), HEAD_DIAMETER, white);
 
     // Stick arms (brown) - use constructor with axis to angle outward
     Color brown(0.4f, 0.25f, 0.1f);
-    leftArm = new Cylinder(ipos + Vector3(-1.8f, 1.5f, 0.0f), 1.5f, 0.16f,
+    leftArm = new Cylinder(ipos + Vector3(-ARM_OFFSET_X, ARM_OFFSET_Y, 0.0f), ARM_LENGTH, ARM_DIAMETER,
                            Vector3(-1.0f, 0.2f, 0.0f), 0.0f);  // Point left and slightly up
     leftArm->setColor(brown);
-    rightArm = new Cylinder(ipos + Vector3(1.8f, 1.5f, 0.0f), 1.5f, 0.16f,
+    rightArm = new Cylinder(ipos + Vector3(ARM_OFFSET_X, ARM_OFFSET_Y, 0.0f), ARM_LENGTH, ARM_DIAMETER,
                             Vector3(1.0f, 0.2f, 0.0f), 0.0f);   // Point right and slightly up
     rightArm->setColor(brown);
 
     // Carrot nose (orange) - using Cylinder since Cone doesn't support rotation
     Color orange(1.0f, 0.5f, 0.0f);
     // Use Cylinder constructor with axis parameter to point forward (Z direction)
-    nose = new Cylinder(ipos + Vector3(0.0f, 3.0f, 1.2f), 0.5f, 0.16f, Vector3(0.0f, 0.0f, 1.0f), 0.0f);
+    nose = new Cylinder(ipos + Vector3(0.0f, HEAD_Y_OFFSET, NOSE_OFFSET_Z), NOSE_LENGTH, NOSE_DIAMETER,
+                        Vector3(0.0f, 0.0f, 1.0f), 0.0f);
     nose->setColor(orange);
 
     // Coal buttons (black)
     Color black(0.1f, 0.1f, 0.1f);
-    button1 = new Sphere(ipos + Vector3(0.0f, 1.8f, 1.8f), 0.24f, black);
-    button2 = new Sphere(ipos + Vector3(0.0f, 1.3f, 1.8f), 0.24f, black);
-    button3 = new Sphere(ipos + Vector3(0.0f, 0.8f, 1.8f), 0.24f, black);
+    button1 = new Sphere(ipos + Vector3(0.0f, BUTTON1_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
+    button2 = new Sphere(ipos + Vector3(0.0f, BUTTON2_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
+    button3 = new Sphere(ipos + Vector3(0.0f, BUTTON3_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
 
     // Hat (black)
-    hatBrim = new Cylinder(ipos + Vector3(0.0f, 4.2f, 0.0f), 0.1f, 2.0f, black);  // flat disk
-    hatTop = new Cylinder(ipos + Vector3(0.0f, 4.6f, 0.0f), 0.8f, 1.2f, black);   // tall cylinder
+    hatBrim = new Cylinder(ipos + Vector3(0.0f, HAT_BRIM_Y_OFFSET, 0.0f), HAT_BRIM_HEIGHT, HAT_BRIM_DIAMETER, black);
+    hatTop = new Cylinder(ipos + Vector3(0.0f, HAT_TOP_Y_OFFSET, 0.0f), HAT_TOP_HEIGHT, HAT_TOP_DIAMETER, black);
 
     // Eyes (black)
-    leftEye = new Sphere(ipos + Vector3(-0.3f, 3.3f, 1.1f), 0.2f, black);
-    rightEye = new Sphere(ipos + Vector3(0.3f, 3.3f, 1.1f), 0.2f, black);
+    leftEye = new Sphere(ipos + Vector3(-EYE_OFFSET_X, EYE_Y_OFFSET, EYE_OFFSET_Z), EYE_DIAMETER, black);
+    rightEye = new Sphere(ipos + Vector3(EYE_OFFSET_X, EYE_Y_OFFSET, EYE_OFFSET_Z), EYE_DIAMETER, black);
 }
 
 Enemy::Enemy(Vector3 ipos, Color icolHead, Color icolBody) : position(ipos), yaw(0.0f), currentHealth(5.0f), maxHealth(5.0f), alive(true) {
     // Main body spheres (white - snowman should always be white)
     Color white(1.0f, 1.0f, 1.0f);
-    bodyLower = new Sphere(ipos + Vector3(0.0f, 1.0f, 0.0f), 3.6f, white);
-    head = new Sphere(ipos + Vector3(0.0f, 3.0f, 0.0f), 2.4f, white);
+    bodyLower = new Sphere(ipos + Vector3(0.0f, BODY_Y_OFFSET, 0.0f), BODY_DIAMETER, white);
+    head = new Sphere(ipos + Vector3(0.0f, HEAD_Y_OFFSET, 0.0f), HEAD_DIAMETER, white);
 
     // Stick arms (brown)
     Color brown(0.4f, 0.25f, 0.1f);
-    leftArm = new Cylinder(ipos + Vector3(-1.8f, 1.5f, 0.0f), 1.5f, 0.16f,
+    leftArm = new Cylinder(ipos + Vector3(-ARM_OFFSET_X, ARM_OFFSET_Y, 0.0f), ARM_LENGTH, ARM_DIAMETER,
                            Vector3(-1.0f, 0.2f, 0.0f), 0.0f);
     leftArm->setColor(brown);
-    rightArm = new Cylinder(ipos + Vector3(1.8f, 1.5f, 0.0f), 1.5f, 0.16f,
+    rightArm = new Cylinder(ipos + Vector3(ARM_OFFSET_X, ARM_OFFSET_Y, 0.0f), ARM_LENGTH, ARM_DIAMETER,
                             Vector3(1.0f, 0.2f, 0.0f), 0.0f);
     rightArm->setColor(brown);
 
     // Carrot nose (orange)
     Color orange(1.0f, 0.5f, 0.0f);
-    nose = new Cylinder(ipos + Vector3(0.0f, 3.0f, 1.2f), 0.5f, 0.16f, Vector3(0.0f, 0.0f, 1.0f), 0.0f);
+    nose = new Cylinder(ipos + Vector3(0.0f, HEAD_Y_OFFSET, NOSE_OFFSET_Z), NOSE_LENGTH, NOSE_DIAMETER,
+                        Vector3(0.0f, 0.0f, 1.0f), 0.0f);
     nose->setColor(orange);
 
     // Coal buttons (black)
     Color black(0.1f, 0.1f, 0.1f);
-    button1 = new Sphere(ipos + Vector3(0.0f, 1.8f, 1.8f), 0.24f, black);
-    button2 = new Sphere(ipos + Vector3(0.0f, 1.3f, 1.8f), 0.24f, black);
-    button3 = new Sphere(ipos + Vector3(0.0f, 0.8f, 1.8f), 0.24f, black);
+    button1 = new Sphere(ipos + Vector3(0.0f, BUTTON1_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
+    button2 = new Sphere(ipos + Vector3(0.0f, BUTTON2_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
+    button3 = new Sphere(ipos + Vector3(0.0f, BUTTON3_Y_OFFSET, BUTTON_OFFSET_Z), BUTTON_DIAMETER, black);
 
     // Hat (black)
-    hatBrim = new Cylinder(ipos + Vector3(0.0f, 4.2f, 0.0f), 0.1f, 2.0f, black);
-    hatTop = new Cylinder(ipos + Vector3(0.0f, 4.6f, 0.0f), 0.8f, 1.2f, black);
+    hatBrim = new Cylinder(ipos + Vector3(0.0f, HAT_BRIM_Y_OFFSET, 0.0f), HAT_BRIM_HEIGHT, HAT_BRIM_DIAMETER, black);
+    hatTop = new Cylinder(ipos + Vector3(0.0f, HAT_TOP_Y_OFFSET, 0.0f), HAT_TOP_HEIGHT, HAT_TOP_DIAMETER, black);
 
     // Eyes (black)
-    leftEye = new Sphere(ipos + Vector3(-0.3f, 3.3f, 1.1f), 0.2f, black);
-    rightEye = new Sphere(ipos + Vector3(0.3f, 3.3f, 1.1f), 0.2f, black);
+    leftEye = new Sphere(ipos + Vector3(-EYE_OFFSET_X, EYE_Y_OFFSET, EYE_OFFSET_Z), EYE_DIAMETER, black);
+    rightEye = new Sphere(ipos + Vector3(EYE_OFFSET_X, EYE_Y_OFFSET, EYE_OFFSET_Z), EYE_DIAMETER, black);
 }
 
 Enemy::~Enemy() {
@@ -132,36 +165,36 @@ void Enemy::updatePos() {
     };
 
     // Main body (spheres, no rotation needed for position, but stays centered)
-    bodyLower->setPosition(position + Vector3(0.0f, 1.0f, 0.0f));
-    head->setPosition(position + Vector3(0.0f, 3.0f, 0.0f));
+    bodyLower->setPosition(position + Vector3(0.0f, BODY_Y_OFFSET, 0.0f));
+    head->setPosition(position + Vector3(0.0f, HEAD_Y_OFFSET, 0.0f));
 
     // Arms (rotate positions and axes)
-    Vector3 leftArmOffset = rotateOffset(-1.8f, 0.0f);
-    leftArm->setPosition(position + leftArmOffset + Vector3(0.0f, 1.5f, 0.0f));
+    Vector3 leftArmOffset = rotateOffset(-ARM_OFFSET_X, 0.0f);
+    leftArm->setPosition(position + leftArmOffset + Vector3(0.0f, ARM_OFFSET_Y, 0.0f));
 
-    Vector3 rightArmOffset = rotateOffset(1.8f, 0.0f);
-    rightArm->setPosition(position + rightArmOffset + Vector3(0.0f, 1.5f, 0.0f));
+    Vector3 rightArmOffset = rotateOffset(ARM_OFFSET_X, 0.0f);
+    rightArm->setPosition(position + rightArmOffset + Vector3(0.0f, ARM_OFFSET_Y, 0.0f));
 
     // Nose (rotate position)
-    Vector3 noseOffset = rotateOffset(0.0f, 1.2f);
-    nose->setPosition(position + noseOffset + Vector3(0.0f, 3.0f, 0.0f));
+    Vector3 noseOffset = rotateOffset(0.0f, NOSE_OFFSET_Z);
+    nose->setPosition(position + noseOffset + Vector3(0.0f, HEAD_Y_OFFSET, 0.0f));
 
     // Buttons (rotate positions)
-    Vector3 buttonOffset = rotateOffset(0.0f, 1.8f);
-    button1->setPosition(position + buttonOffset + Vector3(0.0f, 1.8f, 0.0f));
-    button2->setPosition(position + buttonOffset + Vector3(0.0f, 1.3f, 0.0f));
-    button3->setPosition(position + buttonOffset + Vector3(0.0f, 0.8f, 0.0f));
+    Vector3 buttonOffset = rotateOffset(0.0f, BUTTON_OFFSET_Z);
+    button1->setPosition(position + buttonOffset + Vector3(0.0f, BUTTON1_Y_OFFSET, 0.0f));
+    button2->setPosition(position + buttonOffset + Vector3(0.0f, BUTTON2_Y_OFFSET, 0.0f));
+    button3->setPosition(position + buttonOffset + Vector3(0.0f, BUTTON3_Y_OFFSET, 0.0f));
 
     // Hat (centered, no XZ offset)
-    hatBrim->setPosition(position + Vector3(0.0f, 4.2f, 0.0f));
-    hatTop->setPosition(position + Vector3(0.0f, 4.6f, 0.0f));
+    hatBrim->setPosition(position + Vector3(0.0f, HAT_BRIM_Y_OFFSET, 0.0f));
+    hatTop->setPosition(position + Vector3(0.0f, HAT_TOP_Y_OFFSET, 0.0f));
 
     // Eyes (rotate positions)
-    Vector3 leftEyeOffset = rotateOffset(-0.3f, 1.1f);
-    leftEye->setPosition(position + leftEyeOffset + Vector3(0.0f, 3.3f, 0.0f));
+    Vector3 leftEyeOffset = rotateOffset(-EYE_OFFSET_X, EYE_OFFSET_Z);
+    leftEye->setPosition(position + leftEyeOffset + Vector3(0.0f, EYE_Y_OFFSET, 0.0f));
 
-    Vector3 rightEyeOffset = rotateOffset(0.3f, 1.1f);
-    rightEye->setPosition(position + rightEyeOffset + Vector3(0.0f, 3.3f, 0.0f));
+    Vector3 rightEyeOffset = rotateOffset(EYE_OFFSET_X, EYE_OFFSET_Z);
+    rightEye->setPosition(position + rightEyeOffset + Vector3(0.0f, EYE_Y_OFFSET, 0.0f));
 }
 
 void Enemy::takeDamage(float damage) {
@@ -210,7 +243,7 @@ void Enemy::drawHealthBar() {
     
     // Project enemy position (above hat at Y +5.2)
     GLdouble winX, winY, winZ;
-    gluProject(position.x, position.y + 5.2f, position.z,
+    gluProject(position.x, position.y + HEALTH_BAR_Y_OFFSET, position.z,
                modelview, projection, view,
                &winX, &winY, &winZ);
     

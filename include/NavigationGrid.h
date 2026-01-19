@@ -9,7 +9,7 @@ public:
     static constexpr float CELL_SIZE = 1.0f;
     static constexpr int GRID_SIZE = 100;       // 100 / 1 = 100 cells per axis
     static constexpr float GRID_OFFSET = 50.0f; // Offset to convert world coords to grid indices
-    static constexpr float ENEMY_RADIUS = 1.8f; // Radius used when marking blocked cells
+    static constexpr float ENEMY_RADIUS = 1.1f; // Radius used when marking blocked cells
 
     NavigationGrid();
 
