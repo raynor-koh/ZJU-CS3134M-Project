@@ -92,6 +92,13 @@ void EnemyManager::spawnEnemy(const Vector3& playerPos) {
     float b2 = 0.3f + (static_cast<float>(rand()) / RAND_MAX) * 0.7f;
 
     Enemy* enemy = new Enemy(spawnPos, Color(r1, g1, b1), Color(r2, g2, b2));
+
+    // Calculate initial yaw to face player, then rotate 90 degrees right
+    float dx = playerPos.x - spawnX;
+    float dz = playerPos.z - spawnZ;
+    float initialYaw = atan2(dz, dx) - static_cast<float>(M_PI) / 2.0f;
+    enemy->setYaw(initialYaw);
+
     managedEnemies.push_back(enemy);
     scene->addEnemy(enemy);
 
@@ -110,6 +117,12 @@ void EnemyManager::updateEnemyMovement(float deltaTime, const Vector3& playerPos
         float dx = playerPos.x - enemyPos.x;
         float dz = playerPos.z - enemyPos.z;
         float distance = sqrt(dx * dx + dz * dz);
+
+        // Always update rotation to face player, then rotate 90 degrees right
+        if (distance > 0.01f) {  // Avoid division by zero
+            float angleToPlayer = atan2(dz, dx) - static_cast<float>(M_PI) / 2.0f;
+            enemy->setYaw(angleToPlayer);
+        }
 
         if (distance > 0.1f) {  // Only move if not already at player
             // Normalize direction
