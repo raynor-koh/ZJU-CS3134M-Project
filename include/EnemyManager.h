@@ -2,12 +2,14 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_map>
 #include "Enemy.h"
 #include "GameState.h"
 
 class Scene;  // Forward declaration
 class Player; // Forward declaration
 class Shape;  // Forward declaration
+class NavigationGrid; // Forward declaration
 
 class EnemyManager {
 public:
@@ -25,6 +27,9 @@ public:
 
     // Enemy properties
     void setEnemySpeed(float speed) { enemySpeed = speed; }
+
+    // Navigation grid for pathfinding
+    void setNavigationGrid(const NavigationGrid* grid) { navigationGrid = grid; pathInfo.clear(); }
 
     // Obstacle avoidance tuning
     void setAvoidanceLookAhead(float distance) { avoidanceLookAhead = distance; }
@@ -57,6 +62,7 @@ private:
     bool rayIntersectsAABB(const Vector3& rayOrigin, const Vector3& rayDir,
                            const Vector3& boxMin, const Vector3& boxMax,
                            float& hitDistance, Vector3& hitNormal) const;
+    bool canMoveTo(float x, float z) const;
 
     Scene* scene;
     std::vector<Enemy*> managedEnemies;  // Enemies this manager spawned and controls
@@ -76,6 +82,19 @@ private:
     float avoidanceStrength;    // How strongly to avoid obstacles (default: 2.0)
     int avoidanceRayCount;      // Number of rays to cast (default: 5 - center + 2 on each side)
     float avoidanceRaySpread;   // Angle spread for side rays in degrees (default: 45.0)
+
+    const NavigationGrid* navigationGrid;
+
+    struct EnemyPathInfo {
+        std::vector<Vector3> path;
+        size_t nextIndex = 0;
+        int lastStartX = -1;
+        int lastStartZ = -1;
+        int lastGoalX = -1;
+        int lastGoalZ = -1;
+        float replanTimer = 0.0f;
+    };
+    std::unordered_map<Enemy*, EnemyPathInfo> pathInfo;
 
     // Player damage tracking
     float damageCooldown;     // Time until player can be damaged again

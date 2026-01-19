@@ -490,6 +490,10 @@ int main(int argc, char** argv) {
         std::cout << "You can place an OBJ file there to test importing." << std::endl;
     }
 
+    // Rebuild grids after adding demo shapes
+    scene->rebuildCollisionGrid();
+    scene->rebuildNavigationGrid();
+
     // Export final scene with all test shapes
     MeshIO::exportSceneOBJ(scene, "../../resources/meshes/exported/final_scene.obj");
     std::cout << "Final scene with test shapes exported to resources/meshes/exported/final_scene.obj" << std::endl;
@@ -526,6 +530,7 @@ int main(int argc, char** argv) {
     enemyManager->setMaxSpawnRadius(30.0f);  // At most 30 units from player
     enemyManager->setMaxEnemies(6);          // Maximum 6 enemies at once
     enemyManager->setEnemySpeed(1.5f);       // Enemies move at 1.5 units/second
+    enemyManager->setNavigationGrid(&scene->getNavigationGrid());
     std::cout << "Enemy system initialized: spawning every 5s, max 6 enemies" << std::endl;
 
     // Initialize screen recorder (30 FPS)

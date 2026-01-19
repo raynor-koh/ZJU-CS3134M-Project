@@ -20,28 +20,45 @@ Scene::~Scene() {
 }
 
 void Scene::initialize() {
-    // Add default objects to the scene
-    // addGameObject(new GameObject(Vector3(0.0f, 1.0f, 0.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
-    // addGameObject(new GameObject(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));
-    // addGameObject(new GameObject(Vector3(-4.0f, 1.5f, 2.0f), Vector3(3.0f, 3.0f, 3.0f), Color(0.8f, 0.8f, 0.3f)));
-    // addGameObject(new GameObject(Vector3(8.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
-    // addGameObject(new GameObject(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.5f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
-    // addGameObject(new GameObject(Vector3(3.0f, 2.0f, 8.0f), Vector3(4.0f, 4.0f, 4.0f), Color(0.9f, 0.5f, 0.2f)));
+    // Load textures
     addTexture(new Texture("resources/textures/WoodCap.bmp"));
     addTexture(new Texture("resources/textures/WoodSide.bmp"));
-    // Initial enemy removed - enemies will spawn via EnemyManager instead
-    // addEnemy(new Enemy(Vector3(-5.0f, 0.0f, -5.0f), Color(0.7f, 1.0f, 0.3f), Color(0.1f, 0.3f, 0.5f)));
-    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 3.0f), 1.0f, 1.0f, Color(0.1f, 1.0f, 1.0f)));  // Y = height/2 = 0.5
-    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 0.5f, 5.0f), 1.0f, 1.0f, Color(0.4f, 0.1f, 0.9f)));  // Already correct
-    addShape(std::make_shared<Sphere>(Vector3(5.0f, 0.2f, 4.2f), 0.4f, Color(0.8f, 0.2f, 0.6f)));  // Y = diameter/2 = 0.2
-    addShape(std::make_shared<Cube>(Vector3(0.0f, 0.5f, 0.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));  // Y = size.y/2 = 0.5
-    addShape(std::make_shared<Cube>(Vector3(5.0f, 0.5f, -3.0f), Vector3(1.0f, 1.0f, 1.0f), Color(0.3f, 0.3f, 0.8f)));  // Already correct
-    addShape(std::make_shared<Cube>(Vector3(-4.0f, 1.5f, 2.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));  // Already correct
-    addShape(std::make_shared<Cube>(Vector3(10.0f, 1.0f, 5.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));  // Already correct
-    addShape(std::make_shared<Cube>(Vector3(-7.0f, 0.75f, -6.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));  // Already correct
-    Cube* cube = new Cube(Vector3(3.0f, 4.0f, 10.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f));  // Y = size.y/2 = 4.0
+
+    // Add obstacles - SPREAD OUT to allow enemy navigation (min 8 units apart)
+    // Clear zone: No obstacles within 12 units of origin (player spawn area)
+
+    // Cylinder 1 at (-18, 12) - northwest quadrant
+    addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 1.0f, 12.0f), 2.0f, 2.0f, Color(0.1f, 1.0f, 1.0f)));
+
+    // Cylinder 2 at (0, -25) - south
+    addShape(std::make_shared<Cylinder>(Vector3(0.0f, 1.0f, -25.0f), 2.0f, 2.0f, Color(0.4f, 0.1f, 0.9f)));
+
+    // Sphere at (30, 0) - east
+    addShape(std::make_shared<Sphere>(Vector3(30.0f, 1.0f, 0.0f), 2.0f, Color(0.8f, 0.2f, 0.6f)));
+
+    // Cube 1 at (15, 15) - northeast quadrant
+    addShape(std::make_shared<Cube>(Vector3(15.0f, 0.5f, 15.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.8f, 0.3f, 0.3f)));
+
+    // Cube 2 (tall) at (20, -15) - southeast quadrant
+    addShape(std::make_shared<Cube>(Vector3(20.0f, 1.5f, -15.0f), Vector3(1.0f, 3.0f, 5.0f), Color(0.8f, 0.8f, 0.3f)));
+
+    // Cube 3 at (-22, -20) - southwest quadrant
+    addShape(std::make_shared<Cube>(Vector3(-22.0f, 1.0f, -20.0f), Vector3(2.0f, 2.0f, 2.0f), Color(0.5f, 0.2f, 0.6f)));
+
+    // Cube 4 at (-30, 25) - northwest far
+    addShape(std::make_shared<Cube>(Vector3(-30.0f, 0.75f, 25.0f), Vector3(1.0f, 1.5f, 1.5f), Color(0.3f, 0.7f, 0.5f)));
+
+    // Cube 5 (large textured) at (0, 35) - north
+    Cube* cube = new Cube(Vector3(0.0f, 4.0f, 35.0f), Vector3(4.0f, 8.0f, 4.0f), Color(0.9f, 0.5f, 0.2f));
     addShape(std::shared_ptr<Cube>(cube));
-    objects[8]->bindTexture(textures[1], Shape::BOTH);
+    objects[7]->bindTexture(textures[1], Shape::BOTH);
+
+    // Cube 6 at (-35, -35) - southwest corner
+    addShape(std::make_shared<Cube>(Vector3(-35.0f, 0.5f, -35.0f), Vector3(2.0f, 1.0f, 2.0f), Color(0.3f, 0.3f, 0.8f)));
+
+    // Initialize the grids after all obstacles are added
+    rebuildCollisionGrid();
+    rebuildNavigationGrid();
 }
 
 void Scene::draw() const {
@@ -97,6 +114,14 @@ void Scene::addTexture(Texture* texture) {
 
 void Scene::addEnemy(Enemy* enemy) {
     enemies.push_back(enemy);
+}
+
+void Scene::rebuildCollisionGrid() {
+    collisionGrid.initialize(objects);
+}
+
+void Scene::rebuildNavigationGrid() {
+    navigationGrid.initialize(objects);
 }
 
 void Scene::drawGround() const {

@@ -2,6 +2,7 @@
 #include "EnemyManager.h"
 #include "Scene.h"
 #include "Player.h"
+#include "NavigationGrid.h"
 #include "CollisionDetector.h"
 #include <cmath>
 #include <cstdlib>
@@ -16,6 +17,7 @@ EnemyManager::EnemyManager(Scene* scene)
       maxSpawnRadius(25.0f),      // At most 25 units from player
       maxEnemies(10),             // Maximum 10 enemies at once
       enemySpeed(3.0f),           // Enemy move speed
+      navigationGrid(nullptr),
       damageCooldown(0.0f),
       damagePerHit(10.0f),        // 10 damage per hit
       hitCooldownDuration(1.0f)   // 1 second invincibility
@@ -108,33 +110,85 @@ void EnemyManager::spawnEnemy(const Vector3& playerPos) {
 }
 
 void EnemyManager::updateEnemyMovement(float deltaTime, const Vector3& playerPos) {
+    const float WAYPOINT_THRESHOLD = 0.5f;
+    const float REPLAN_INTERVAL = 0.5f;
+    const float MOVE_EPSILON = 0.01f;
+
     for (Enemy* enemy : managedEnemies) {
         if (!enemy || !enemy->isAlive()) continue;
 
         Vector3 enemyPos = enemy->getPosition();
+        Vector3 targetPos = playerPos;
 
-        // Calculate direction to player (in XZ plane)
-        float dx = playerPos.x - enemyPos.x;
-        float dz = playerPos.z - enemyPos.z;
-        float distance = sqrt(dx * dx + dz * dz);
+        if (navigationGrid) {
+            EnemyPathInfo& info = pathInfo[enemy];
+            info.replanTimer -= deltaTime;
 
-        // Always update rotation to face player, then rotate 90 degrees right
-        if (distance > 0.01f) {  // Avoid division by zero
-            float angleToPlayer = atan2(dz, dx) - static_cast<float>(M_PI) / 2.0f;
-            enemy->setYaw(angleToPlayer);
+            int startGX = navigationGrid->worldToGridX(enemyPos.x);
+            int startGZ = navigationGrid->worldToGridZ(enemyPos.z);
+            int goalGX = navigationGrid->worldToGridX(playerPos.x);
+            int goalGZ = navigationGrid->worldToGridZ(playerPos.z);
+
+            bool needReplan = info.path.empty() ||
+                              info.replanTimer <= 0.0f ||
+                              startGX != info.lastStartX || startGZ != info.lastStartZ ||
+                              goalGX != info.lastGoalX || goalGZ != info.lastGoalZ ||
+                              info.nextIndex >= info.path.size();
+
+            if (needReplan) {
+                info.path.clear();
+                navigationGrid->findPath(enemyPos.x, enemyPos.z, playerPos.x, playerPos.z, info.path);
+                info.nextIndex = 0;
+                info.replanTimer = REPLAN_INTERVAL;
+                info.lastStartX = startGX;
+                info.lastStartZ = startGZ;
+                info.lastGoalX = goalGX;
+                info.lastGoalZ = goalGZ;
+            }
+
+            if (info.nextIndex < info.path.size()) {
+                targetPos = info.path[info.nextIndex];
+                float dxw = targetPos.x - enemyPos.x;
+                float dzw = targetPos.z - enemyPos.z;
+                float distw = std::sqrt(dxw * dxw + dzw * dzw);
+                if (distw < WAYPOINT_THRESHOLD) {
+                    info.nextIndex++;
+                    if (info.nextIndex < info.path.size()) {
+                        targetPos = info.path[info.nextIndex];
+                    } else {
+                        targetPos = playerPos;
+                    }
+                }
+            }
         }
 
-        if (distance > 0.1f) {  // Only move if not already at player
-            // Normalize direction
+        float dx = targetPos.x - enemyPos.x;
+        float dz = targetPos.z - enemyPos.z;
+        float distance = sqrt(dx * dx + dz * dz);
+
+        if (distance > 0.01f) {
+            float angleToTarget = atan2(dz, dx) - static_cast<float>(M_PI) / 2.0f;
+            enemy->setYaw(angleToTarget);
+        }
+
+        if (distance > 0.1f) {
             dx /= distance;
             dz /= distance;
 
-            // Move toward player
-            float moveX = dx * enemySpeed * deltaTime;
-            float moveZ = dz * enemySpeed * deltaTime;
+            float step = enemySpeed * deltaTime;
+            float moveX = dx * step;
+            float moveZ = dz * step;
 
-            Vector3 newPos(enemyPos.x + moveX, enemyPos.y, enemyPos.z + moveZ);
-            enemy->setPosition(newPos);
+            float newX = enemyPos.x + moveX;
+            float newZ = enemyPos.z + moveZ;
+
+            if (canMoveTo(newX, newZ)) {
+                enemy->setPosition(Vector3(newX, enemyPos.y, newZ));
+            } else if (std::fabs(moveX) > MOVE_EPSILON && canMoveTo(newX, enemyPos.z)) {
+                enemy->setPosition(Vector3(newX, enemyPos.y, enemyPos.z));
+            } else if (std::fabs(moveZ) > MOVE_EPSILON && canMoveTo(enemyPos.x, newZ)) {
+                enemy->setPosition(Vector3(enemyPos.x, enemyPos.y, newZ));
+            }
         }
     }
 }
@@ -160,6 +214,7 @@ void EnemyManager::removeDeadEnemies() {
     auto it = managedEnemies.begin();
     while (it != managedEnemies.end()) {
         if (*it == nullptr || !(*it)->isAlive()) {
+            pathInfo.erase(*it);
             it = managedEnemies.erase(it);
         } else {
             ++it;
@@ -185,6 +240,7 @@ bool EnemyManager::isValidSpawnPosition(const Vector3& pos) const {
 void EnemyManager::clear() {
     // Note: Enemies are owned by Scene, so we don't delete them here
     managedEnemies.clear();
+    pathInfo.clear();
     spawnTimer = 0.0f;
     damageCooldown = 0.0f;
 }
@@ -193,4 +249,11 @@ void EnemyManager::reset() {
     clear();
     spawnTimer = 0.0f;
     damageCooldown = 0.0f;
+}
+
+bool EnemyManager::canMoveTo(float x, float z) const {
+    if (!scene) return true;
+    const float ENEMY_RADIUS = 1.8f;
+    const float ENEMY_HEIGHT = 5.0f;
+    return !scene->checkCollision(x, 0.0f, z, ENEMY_RADIUS, ENEMY_HEIGHT);
 }

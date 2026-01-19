@@ -1,5 +1,7 @@
 #pragma once
 #include "GameObject.h"
+#include "CollisionGrid.h"
+#include "NavigationGrid.h"
 #include <vector>
 #include <memory>
 
@@ -44,6 +46,13 @@ public:
     const std::vector<std::shared_ptr<Shape>>& getObjects() const { return objects; }
     const std::vector<Enemy*>& getEnemies() const { return enemies; }
 
+    // Grid-based collision detection for enemies
+    const CollisionGrid& getCollisionGrid() const { return collisionGrid; }
+    void rebuildCollisionGrid();
+
+    const NavigationGrid& getNavigationGrid() const { return navigationGrid; }
+    void rebuildNavigationGrid();
+
     // Lighting system
     void setLighting(Lighting* light) { lighting = light; }
     Lighting* getLighting() const { return lighting; }
@@ -72,4 +81,8 @@ private:
     float wallThickness;
 
     Lighting* lighting;  // Not owned by Scene, just a reference
+
+    // Grid-based collision detection
+    CollisionGrid collisionGrid;
+    NavigationGrid navigationGrid;
 };

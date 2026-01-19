@@ -39,6 +39,8 @@ add_executable(FirstOGL
     src/Player.cpp
     src/Enemy.cpp
     src/EnemyManager.cpp
+    src/CollisionGrid.cpp
+    src/NavigationGrid.cpp
     src/CollisionDetector.cpp
     src/Lighting.cpp
     src/GenericMesh.cpp
