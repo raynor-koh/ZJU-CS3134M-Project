@@ -26,8 +26,10 @@ void Scene::initialize() {
     addTexture(new Texture("resources/textures/WoodCap.bmp"));
     addTexture(new Texture("resources/textures/WoodSide.bmp"));
 
+    glassPanels.clear();
+
     // Add obstacles - SPREAD OUT to allow enemy navigation (min 8 units apart)
-    // Clear zone: No obstacles within 12 units of origin (player spawn area)
+    // Note: house is intentionally placed at origin inside the safe zone.
 
     // Tree (trunk + canopy) at (-18, 12)
     addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 1.5f, 12.0f), 3.0f, 0.8f, Color(0.5f, 0.3f, 0.15f)));
@@ -113,6 +115,112 @@ void Scene::initialize() {
     addShape(std::make_shared<Cylinder>(Vector3(-18.0f, 0.2f, 42.0f), 0.4f, 1.8f, Color(0.3f, 0.3f, 0.3f)));
     addShape(std::make_shared<Cone>(Vector3(-18.0f, 0.9f, 42.0f), 1.0f, 1.0f, Color(0.9f, 0.4f, 0.1f)));
 
+    // House with door and windows at safe zone center
+    const Vector3 houseCenter(0.0f, 0.0f, 0.0f);
+    const float houseWidth = 4.2f;
+    const float houseDepth = 3.6f;
+    const float wallHeight = 2.6f;
+    const float wallThickness = 0.4f;
+    const float doorWidth = 1.4f;
+    const float doorHeight = 1.9f;
+    const float frontZ = houseCenter.z + houseDepth * 0.5f;
+    const float backZ = houseCenter.z - houseDepth * 0.5f;
+    const float leftX = houseCenter.x - houseWidth * 0.5f;
+    const float rightX = houseCenter.x + houseWidth * 0.5f;
+    Color wallColor(0.75f, 0.75f, 0.7f);
+    Color trimColor(0.6f, 0.55f, 0.5f);
+    Color doorColor(0.4f, 0.25f, 0.15f);
+
+    // Back wall
+    addShape(std::make_shared<Cube>(Vector3(houseCenter.x, wallHeight * 0.5f, backZ),
+                                    Vector3(houseWidth, wallHeight, wallThickness), wallColor));
+
+    // Side walls with window openings
+    const float windowWidth = 1.2f;
+    const float windowHeight = 0.8f;
+    const float windowBottom = 1.0f;
+    const float windowTop = windowBottom + windowHeight;
+
+    const float leftWindowCenterZ = houseCenter.z + 0.6f;
+    const float rightWindowCenterZ = houseCenter.z - 0.6f;
+    const float leftWindowStartZ = leftWindowCenterZ - windowWidth * 0.5f;
+    const float leftWindowEndZ = leftWindowCenterZ + windowWidth * 0.5f;
+    const float rightWindowStartZ = rightWindowCenterZ - windowWidth * 0.5f;
+    const float rightWindowEndZ = rightWindowCenterZ + windowWidth * 0.5f;
+
+    // Left wall segments (front/back) full height
+    addShape(std::make_shared<Cube>(Vector3(leftX, wallHeight * 0.5f, (backZ + leftWindowStartZ) * 0.5f),
+                                    Vector3(wallThickness, wallHeight, leftWindowStartZ - backZ), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(leftX, wallHeight * 0.5f, (leftWindowEndZ + frontZ) * 0.5f),
+                                    Vector3(wallThickness, wallHeight, frontZ - leftWindowEndZ), wallColor));
+    // Left wall bands (below/above window)
+    addShape(std::make_shared<Cube>(Vector3(leftX, windowBottom * 0.5f, leftWindowCenterZ),
+                                    Vector3(wallThickness, windowBottom, windowWidth), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(leftX, windowTop + (wallHeight - windowTop) * 0.5f, leftWindowCenterZ),
+                                    Vector3(wallThickness, wallHeight - windowTop, windowWidth), wallColor));
+
+    // Right wall segments (front/back) full height
+    addShape(std::make_shared<Cube>(Vector3(rightX, wallHeight * 0.5f, (backZ + rightWindowStartZ) * 0.5f),
+                                    Vector3(wallThickness, wallHeight, rightWindowStartZ - backZ), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(rightX, wallHeight * 0.5f, (rightWindowEndZ + frontZ) * 0.5f),
+                                    Vector3(wallThickness, wallHeight, frontZ - rightWindowEndZ), wallColor));
+    // Right wall bands (below/above window)
+    addShape(std::make_shared<Cube>(Vector3(rightX, windowBottom * 0.5f, rightWindowCenterZ),
+                                    Vector3(wallThickness, windowBottom, windowWidth), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(rightX, windowTop + (wallHeight - windowTop) * 0.5f, rightWindowCenterZ),
+                                    Vector3(wallThickness, wallHeight - windowTop, windowWidth), wallColor));
+
+    // Front wall with door opening
+    const float frontSegmentWidth = (houseWidth - doorWidth) * 0.5f;
+    addShape(std::make_shared<Cube>(Vector3(houseCenter.x - (doorWidth * 0.5f + frontSegmentWidth * 0.5f),
+                                            wallHeight * 0.5f, frontZ),
+                                    Vector3(frontSegmentWidth, wallHeight, wallThickness), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(houseCenter.x + (doorWidth * 0.5f + frontSegmentWidth * 0.5f),
+                                            wallHeight * 0.5f, frontZ),
+                                    Vector3(frontSegmentWidth, wallHeight, wallThickness), wallColor));
+    addShape(std::make_shared<Cube>(Vector3(houseCenter.x, doorHeight + (wallHeight - doorHeight) * 0.5f, frontZ),
+                                    Vector3(doorWidth, wallHeight - doorHeight, wallThickness), trimColor));
+    // Door opening is left clear for entry (no door geometry)
+
+    // Roof
+    addShape(std::make_shared<Cube>(Vector3(houseCenter.x, wallHeight + 0.25f, houseCenter.z),
+                                    Vector3(houseWidth + 0.8f, 0.5f, houseDepth + 0.8f), trimColor));
+
+    // Window frames (left/right walls) - thin bars so glass stays see-through
+    const float frameThickness = 0.12f;
+    const float frameDepth = windowWidth + 0.4f;
+    const float frameHeight = windowHeight + 0.4f;
+    const float leftFrameX = leftX - 0.18f;
+    const float rightFrameX = rightX + 0.18f;
+    const float frameCenterY = windowBottom + windowHeight * 0.5f;
+    const float topY = windowBottom + windowHeight;
+
+    // Left window frame bars
+    addShape(std::make_shared<Cube>(Vector3(leftFrameX, windowBottom + 0.05f, leftWindowCenterZ),
+                                    Vector3(frameThickness, 0.1f, frameDepth), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(leftFrameX, topY - 0.05f, leftWindowCenterZ),
+                                    Vector3(frameThickness, 0.1f, frameDepth), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(leftFrameX, frameCenterY, leftWindowStartZ),
+                                    Vector3(frameThickness, frameHeight, 0.1f), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(leftFrameX, frameCenterY, leftWindowEndZ),
+                                    Vector3(frameThickness, frameHeight, 0.1f), trimColor));
+
+    // Right window frame bars
+    addShape(std::make_shared<Cube>(Vector3(rightFrameX, windowBottom + 0.05f, rightWindowCenterZ),
+                                    Vector3(frameThickness, 0.1f, frameDepth), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(rightFrameX, topY - 0.05f, rightWindowCenterZ),
+                                    Vector3(frameThickness, 0.1f, frameDepth), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(rightFrameX, frameCenterY, rightWindowStartZ),
+                                    Vector3(frameThickness, frameHeight, 0.1f), trimColor));
+    addShape(std::make_shared<Cube>(Vector3(rightFrameX, frameCenterY, rightWindowEndZ),
+                                    Vector3(frameThickness, frameHeight, 0.1f), trimColor));
+
+    // Glass panels for windows (translucent material effect)
+    addGlassPanel(Vector3(leftX - 0.02f, windowBottom + windowHeight * 0.5f, leftWindowCenterZ),
+                  windowWidth, windowHeight, true, -1.0f);
+    addGlassPanel(Vector3(rightX + 0.02f, windowBottom + windowHeight * 0.5f, rightWindowCenterZ),
+                  windowWidth, windowHeight, true, 1.0f);
+
     // Initialize the grids after all obstacles are added
     rebuildCollisionGrid();
     rebuildNavigationGrid();
@@ -149,6 +257,8 @@ void Scene::draw() const {
         enemy->draw();
     }
 
+    drawGlassPanels();
+
 }
 
 void Scene::addGameObject(GameObject* obj) {
@@ -164,6 +274,10 @@ void Scene::clearGameObjects() {
 
 void Scene::addShape(std::shared_ptr<Shape> shape) {
     objects.push_back(shape);
+}
+
+void Scene::addGlassPanel(const Vector3& center, float width, float height, bool facingX, float normalSign) {
+    glassPanels.push_back({center, width, height, facingX, normalSign});
 }
 
 void Scene::addTexture(Texture* texture) {
@@ -296,6 +410,54 @@ void Scene::drawSafeZoneIndicator() const {
         glVertex3f(x, height, z);
     }
     glEnd();
+
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+    glPopAttrib();
+}
+
+void Scene::drawGlassPanels() const {
+    if (glassPanels.empty()) {
+        return;
+    }
+
+    glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_LIGHTING_BIT);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+    glDisable(GL_TEXTURE_2D);
+
+    GLfloat glassSpecular[] = {0.8f, 0.9f, 1.0f, 1.0f};
+    GLfloat glassShininess[] = {96.0f};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, glassSpecular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, glassShininess);
+
+    for (const auto& panel : glassPanels) {
+        float halfW = panel.width * 0.5f;
+        float halfH = panel.height * 0.5f;
+        glColor4f(0.6f, 0.8f, 1.0f, 0.25f);
+
+        glBegin(GL_QUADS);
+        if (panel.facingX) {
+            glNormal3f(panel.normalSign, 0.0f, 0.0f);
+            glVertex3f(panel.center.x, panel.center.y - halfH, panel.center.z - halfW);
+            glVertex3f(panel.center.x, panel.center.y - halfH, panel.center.z + halfW);
+            glVertex3f(panel.center.x, panel.center.y + halfH, panel.center.z + halfW);
+            glVertex3f(panel.center.x, panel.center.y + halfH, panel.center.z - halfW);
+        } else {
+            glNormal3f(0.0f, 0.0f, panel.normalSign);
+            glVertex3f(panel.center.x - halfW, panel.center.y - halfH, panel.center.z);
+            glVertex3f(panel.center.x + halfW, panel.center.y - halfH, panel.center.z);
+            glVertex3f(panel.center.x + halfW, panel.center.y + halfH, panel.center.z);
+            glVertex3f(panel.center.x - halfW, panel.center.y + halfH, panel.center.z);
+        }
+        glEnd();
+    }
+
+    GLfloat defaultSpecular[] = {0.3f, 0.3f, 0.3f, 1.0f};
+    GLfloat defaultShininess[] = {32.0f};
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, defaultSpecular);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, defaultShininess);
 
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);

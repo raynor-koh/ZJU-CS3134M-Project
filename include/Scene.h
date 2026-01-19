@@ -71,6 +71,7 @@ private:
     void drawGround() const;
     void drawBoundaryWalls() const;
     void drawSafeZoneIndicator() const;
+    void drawGlassPanels() const;
     // void updateBullets(float deltaTime);
     void checkBulletCollisions();
 
@@ -80,6 +81,16 @@ private:
     std::vector<Target*> targets;
     std::vector<std::shared_ptr<Shape>> objects;
     std::vector<Enemy*> enemies;
+
+    struct GlassPanel {
+        Vector3 center;
+        float width;
+        float height;
+        bool facingX;
+        float normalSign;
+    };
+    std::vector<GlassPanel> glassPanels;
+    void addGlassPanel(const Vector3& center, float width, float height, bool facingX, float normalSign);
 
     float groundSize;
     Color groundColor;
