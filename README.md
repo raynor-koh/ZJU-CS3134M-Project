@@ -2,223 +2,265 @@
 
 ## 项目简介
 
-这是一个基于 OpenGL 的第三人称射击游戏（FPS）项目，使用 GLUT 和 GLEW 库实现。当前实现了基础的 3D 场景渲染和第一人称相机控制系统。
+这是一个基于 OpenGL 的 3D 射击游戏项目，为浙江大学 CS3134M 课程开发。项目实现了完整的游戏系统，包括三种相机模式、敌人AI系统、玩家生命系统、碰撞检测、3D建模与导入导出、交互式光照系统等功能。
 
 ## 功能特性
 
-### 已实现功能
+### 核心游戏系统
 
-1. **3D 场景渲染**
-   - 平坦的地面（50x50 单位，绿色草地）
-   - 多个不同颜色和大小的立方体物体
-   - 基础光照系统（环境光和漫反射光）
-   - 天空蓝色背景
+1. **三种相机模式**
+   - 第一人称视角（FPS模式）
+   - 第三人称视角（跟随模式）
+   - 自由相机/观察者模式（支持轨道旋转、平移、缩放）
 
-2. **第一人称相机系统**
-   - 自由移动（WASD 控制）
-   - 鼠标视角控制（yaw 和 pitch 旋转）
-   - 平滑的移动和旋转
-   - 可调节的移动速度和鼠标灵敏度
+2. **射击系统**
+   - 子弹物理模拟
+   - 可射击的靶子目标
+   - 命中检测与伤害系统
 
-3. **输入系统**
-   - WASD 键位移动
-   - 鼠标控制视角
-   - Tab 键切换鼠标捕获模式
-   - ESC 退出程序
+3. **敌人AI系统**
+   - 自动生成敌人（雪人造型）
+   - 智能寻路与障碍物避让
+   - 多射线检测的路径规划
+   - 玩家追踪与攻击
 
-4. **鼠标捕获切换**
-   - 游戏模式：鼠标被捕获，光标隐藏，用于控制视角
-   - 自由模式：鼠标释放，光标可见，可以操作其他窗口
+4. **玩家系统**
+   - 生命值管理（100HP）
+   - 受伤与回血机制
+   - 游戏结束判定
+
+5. **碰撞检测**
+   - 基于分离轴定理（SAT）的精确碰撞检测
+   - 支持多种形状：圆柱体、球体、立方体
+   - 边界墙碰撞
+
+### 3D建模功能
+
+1. **基础图元**
+   - 立方体（Cube）
+   - 球体（Sphere）
+   - 圆柱体（Cylinder）
+   - 圆锥体（Cone）
+   - 棱柱（Prism）
+   - 棱台（Frustum）
+
+2. **网格导入/导出**
+   - OBJ格式文件导入
+   - 单个形状导出（支持世界坐标/局部坐标）
+   - 整个场景导出
+
+3. **编辑模式**
+   - 物体选择与高亮显示
+   - 材质颜色编辑（RGB滑块）
+   - 纹理应用支持
+
+### 光照系统
+
+- OpenGL光照模型（环境光、漫反射、镜面反射）
+- 点光源/平行光切换
+- 光照强度调节
+- 光源位置控制
+- 头灯模式（跟随相机）
+
+### 录制功能
+
+- 基于FFmpeg的屏幕录制（MP4格式）
+- 截图功能（PNG格式）
+- 60 FPS流畅录制
 
 ## 项目结构
 
 ```
 ZJU-CS3134M-Project/
-├── include/              # 头文件目录
-│   ├── Camera.h         # 相机类
-│   ├── GameObject.h     # 游戏对象类
-│   ├── Scene.h          # 场景管理类
-│   └── InputHandler.h   # 输入处理类
-│   └── Texture.h        # 纹理类
-│   └── Stob.h           # 碰撞物体类
-├── src/                  # 源代码目录
-│   ├── main.cpp         # 主程序入口
-│   ├── Camera.cpp       # 相机实现
-│   ├── GameObject.cpp   # 游戏对象实现
-│   ├── Scene.cpp        # 场景管理实现
-│   └── InputHandler.cpp # 输入处理实现
-│   └── Texture.cpp      # 纹理实现
-│   └── Stob.cpp         # 碰撞物体实现
-├── lib/                  # 库文件
-│   ├── glut32.lib
-│   ├── glut32.dll
-│   ├── glew32.lib
-│   └── glew32.dll
-├── build/                # 构建目录（自动生成）
-├── CMakeLists.txt        # CMake 配置文件
-├── buildAndLaunch.ps1    # 构建和运行脚本
-└── README.md             # 项目说明文档
+├── include/                    # 头文件目录
+│   ├── Camera.h               # 第一人称相机
+│   ├── camera_controller.h    # 第三人称相机控制器
+│   ├── FreeCamera.h           # 自由相机/观察者模式
+│   ├── Player.h               # 玩家类
+│   ├── Enemy.h                # 敌人类
+│   ├── EnemyManager.h         # 敌人管理器
+│   ├── GameObject.h           # 游戏对象基类
+│   ├── Scene.h                # 场景管理
+│   ├── InputHandler.h         # 输入处理
+│   ├── Bullet.h               # 子弹类
+│   ├── Target.h               # 靶子类
+│   ├── Shapes.h               # 基础图元形状
+│   ├── GenericMesh.h          # 通用网格
+│   ├── MeshIO.h               # 网格导入导出
+│   ├── CollisionDetector.h    # SAT碰撞检测
+│   ├── Lighting.h             # 光照系统
+│   ├── Texture.h              # 纹理管理
+│   ├── UI.h                   # 用户界面
+│   ├── ScreenRecorder.h       # 屏幕录制
+│   ├── GameState.h            # 游戏状态枚举
+│   └── Vector3.h              # 向量工具类
+├── src/                        # 源代码目录
+│   ├── main.cpp               # 主程序入口
+│   ├── Camera.cpp             # 第一人称相机实现
+│   ├── camera_controller.cpp  # 第三人称相机实现
+│   ├── FreeCamera.cpp         # 自由相机实现
+│   ├── Player.cpp             # 玩家实现
+│   ├── Enemy.cpp              # 敌人实现
+│   ├── EnemyManager.cpp       # 敌人管理器实现
+│   ├── GameObject.cpp         # 游戏对象实现
+│   ├── Scene.cpp              # 场景管理实现
+│   ├── InputHandler.cpp       # 输入处理实现
+│   ├── Bullet.cpp             # 子弹实现
+│   ├── Target.cpp             # 靶子实现
+│   ├── Shapes.cpp             # 基础图元实现
+│   ├── GenericMesh.cpp        # 通用网格实现
+│   ├── MeshIO.cpp             # 网格IO实现
+│   ├── CollisionDetector.cpp  # 碰撞检测实现
+│   ├── Lighting.cpp           # 光照实现
+│   ├── Texture.cpp            # 纹理实现
+│   ├── UI.cpp                 # UI实现
+│   └── ScreenRecorder.cpp     # 录制实现
+├── lib/                        # 库文件
+│   ├── glut32.lib / glut32.dll
+│   └── glew32.lib / glew32.dll
+├── external/                   # 外部依赖
+│   └── ffmpeg/                # FFmpeg（可选，用于录制）
+├── resources/                  # 资源文件
+│   ├── textures/              # 纹理图片
+│   └── meshes/                # 3D模型文件
+│       ├── imported/          # 导入的模型
+│       └── exported/          # 导出的模型
+├── videos/                     # 录制的视频
+├── pics/                       # 截图
+├── CMakeLists.txt             # CMake配置
+├── buildAndLaunch.ps1         # 构建运行脚本
+└── README.md                  # 项目说明
 ```
-
-## 类设计说明
-
-### Camera（相机类）
-- **职责**：管理第一人称相机的位置、旋转和视图矩阵
-- **主要方法**：
-  - `move(forward, right)` - 相对于视角方向移动
-  - `rotate(deltaYaw, deltaPitch)` - 旋转相机视角
-  - `applyView()` - 应用相机视图变换
-
-### GameObject（游戏对象类）
-- **职责**：表示场景中的 3D 物体
-- **属性**：位置（Vector3）、大小（Vector3）、颜色（Color）
-- **主要方法**：
-  - `draw()` - 渲染物体
-  - 支持设置和获取位置、大小、颜色
-
-### Scene（场景类）
-- **职责**：管理游戏世界中的所有对象
-- **主要方法**：
-  - `addGameObject()` - 添加游戏对象
-  - `draw()` - 渲染整个场景
-  - `initialize()` - 初始化默认场景对象
-
-### InputHandler（输入处理类）
-- **职责**：处理键盘和鼠标输入
-- **主要方法**：
-  - `handleKeyPress()` / `handleKeyRelease()` - 键盘事件
-  - `handleMouseMotion()` - 鼠标移动事件
-  - `toggleMouseCapture()` - 切换鼠标捕获模式
-  - `update()` - 更新相机移动
-
-### Texture（纹理类）
-- **职责**：管理纹理对象
-- **属性**：ID（unsigned int）
-- **主要方法**：
-  - `rebind(filename)` - 更改纹理文件
-  - 需输入.bmp格式图片
-
-### Stob（碰撞物体类）
-- **职责**：作为GameObject的子类，表示测试子弹的木桩
-- **属性**：直径（float）、颜色（Color）、纹理（vector<Texture>）、圆柱切片数（int）
-- **主要方法**：
-  - `draw()` - 渲染木桩
-  - `testCollision(posBullet, rBullet)` - 测试子弹碰撞
-  - 支持设置颜色、切片数、是否加载纹理以及更改纹理图片
 
 ## 编译和运行
 
 ### 环境要求
-- CMake 3.10 或更高版本
-- Visual Studio（支持 C++17）
+
+- Windows操作系统
+- CMake 3.10+
+- Visual Studio（支持C++17）
 - OpenGL
-- GLUT 和 GLEW 库（已包含在 lib 目录）
+- GLUT和GLEW库（已包含在lib目录）
+- FFmpeg（可选，用于屏幕录制）
 
-### 使用 PowerShell 脚本（推荐）
+### 快速构建（推荐）
 
-在项目根目录运行：
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\buildAndLaunch.ps1
 ```
 
-脚本会自动：
-1. 创建 build 目录（如果不存在）
-2. 运行 CMake 配置
-3. 编译项目
-4. 复制必要的 DLL 文件
-5. 启动程序
+脚本会自动完成：配置CMake → 编译项目 → 复制DLL → 复制资源 → 启动程序
 
 ### 手动编译
 
 ```bash
-# 创建并进入构建目录
-mkdir build
-cd build
-
-# 配置 CMake（32位）
+mkdir build && cd build
 cmake -A Win32 ..
-
-# 编译（Release 模式）
 cmake --build . --config Release
-
-# 复制 DLL
-copy ..\lib\glut32.dll Release\
-copy ..\lib\glew32.dll Release\
-
-或者手动复制need文件夹下所有文件到 Release 目录
-
-# 运行程序
-cd Release
-.\FirstOGL.exe
+copy ..\lib\*.dll Release\
+xcopy ..\resources Release\resources\ /E /I
+cd Release && .\FirstOGL.exe
 ```
 
 ## 控制说明
 
+### 基础控制
+
 | 按键 | 功能 |
 |------|------|
-| W | 向前移动 |
-| A | 向左移动 |
-| S | 向后移动 |
-| D | 向右移动 |
-| 鼠标移动 | 控制视角方向 |
-| Tab | 切换鼠标捕获模式（释放/捕获光标） |
-| ESC | 退出程序 |
+| W/A/S/D | 移动（前/左/后/右） |
+| 空格 | 跳跃 |
+| 鼠标移动 | 控制视角 |
+| 鼠标左键 | 射击 |
+| Tab | 切换鼠标捕获模式 |
+| ESC | 退出编辑模式/退出游戏 |
 
-## 扩展开发指南
+### 相机控制
 
-### 添加新的游戏对象
+| 按键 | 功能 |
+|------|------|
+| C | 切换第一/第三人称视角 |
+| V | 切换自由相机/观察者模式 |
+| 鼠标滚轮 | 缩放（自由相机） |
+| Alt+左键拖拽 | 轨道旋转（自由相机） |
+| Alt+右键拖拽 | 平移（自由相机） |
+| F | 适应窗口缩放（自由相机） |
+| +/- | 键盘缩放（自由相机） |
 
-在场景初始化或运行时添加：
+### 编辑模式
+
+| 按键 | 功能 |
+|------|------|
+| E | 切换编辑模式 |
+| 鼠标点击 | 选择物体/操作UI |
+
+### 光照控制
+
+| 按键 | 功能 |
+|------|------|
+| L | 开关光照 |
+| K | 切换点光源/平行光 |
+| [ / ] | 调节光照强度 |
+| 方向键 | 移动光源位置（X/Z轴） |
+| Page Up/Down | 移动光源位置（Y轴） |
+
+### 其他功能
+
+| 按键 | 功能 |
+|------|------|
+| R | 开始/停止屏幕录制 |
+| P | 截图 |
+| T | 切换纹理 |
+
+## 类设计概述
+
+### 核心架构
+
+项目采用**实体-组件模式**，以`GameObject`为基类构建对象层次结构，`Scene`作为中央管理器协调所有游戏实体、渲染和物理更新。
+
+### 主要类
+
+- **GameObject**: 所有场景实体的基类，包含位置、大小、颜色、碰撞类型
+- **Scene**: 中央游戏管理器，管理所有实体集合和游戏循环
+- **Camera/CameraController/FreeCamera**: 三种相机模式的实现
+- **Player**: 玩家类，包含生命值系统和物理
+- **Enemy/EnemyManager**: 敌人实体和AI控制器
+- **CollisionDetector**: 基于SAT的碰撞检测
+- **Shapes**: 基础图元（Cube、Sphere、Cylinder、Cone、Prism、Frustum）
+- **MeshIO**: OBJ格式网格导入导出
+- **Lighting**: 交互式光照系统
+- **UI**: HUD、编辑界面、游戏结束界面
+
+### 游戏状态
+
 ```cpp
-scene->addGameObject(new GameObject(
-    Vector3(x, y, z),        // 位置
-    Vector3(w, h, d),        // 大小
-    Color(r, g, b)           // 颜色（0.0-1.0）
-));
+enum GameState { PLAYING, PAUSED, GAME_OVER };
 ```
 
-### 创建自定义对象类型
+- **PLAYING**: 正常游戏，敌人生成和更新
+- **PAUSED**: 自由相机或编辑模式，物理冻结
+- **GAME_OVER**: 玩家死亡，显示结束界面
 
-继承 `GameObject` 类：
-```cpp
-class Enemy : public GameObject {
-public:
-    void update();           // 更新敌人行为
-    void takeDamage(int hp); // 受到伤害
-private:
-    int health;
-};
-```
+## 技术规格
 
-### 修改相机参数
+- **平台**: Windows 32位
+- **C++标准**: C++17
+- **图形库**: OpenGL（固定管线）
+- **工具库**: GLUT, GLEW
+- **视频编码**: FFmpeg（可选）
+- **构建系统**: CMake
 
-```cpp
-camera->setMoveSpeed(0.3f);              // 设置移动速度
-inputHandler->setMouseSensitivity(0.2f); // 设置鼠标灵敏度
-```
+## 课程要求完成情况
 
-### 调整场景参数
-
-```cpp
-scene->setGroundSize(100.0f);                    // 设置地面大小
-scene->setGroundColor(Color(0.5f, 0.5f, 0.5f)); // 设置地面颜色
-```
-
-## 技术栈
-
-- **语言**：C++17
-- **图形库**：OpenGL
-- **工具库**：GLUT (OpenGL Utility Toolkit)
-- **扩展加载**：GLEW (OpenGL Extension Wrangler)
-- **构建系统**：CMake
-
-## 代码架构优势
-
-1. **模块化设计**：各功能分离到独立的类中
-2. **易于扩展**：基于继承和组合的设计模式
-3. **可维护性**：清晰的代码结构和职责划分
-4. **团队协作**：不同成员可以并行开发不同模块
-5. **敏捷开发**：支持快速迭代和功能添加
+| 要求 | 状态 | 说明 |
+|------|------|------|
+| 建模 | ✅ | 6种基础图元全部实现 |
+| 存储 | ✅ | OBJ格式导入导出 |
+| 编辑 | ✅ | 编辑模式+材质编辑器 |
+| 变换 | ⚠️ | API存在，交互控制待完善 |
+| 光照 | ✅ | 完整光照系统+交互控制 |
+| 漫游 | ✅ | 自由相机完整实现 |
+| 记录 | ✅ | 屏幕录制+截图 |
 
 ## 许可证
 
